@@ -1,0 +1,7 @@
+discord
+discord-py-slash-command
+aiomysql
+aiomysql
+sshtunnel
+fuzzywuzzy[speedup]
+colorlog

@@ -15,6 +15,5 @@ class EventFlags(enum.IntEnum):
 class ModActions(enum.IntEnum):
     kick = 1
     ban = 2
-    delete = 3
-    purge = 4
-    warn = 5
+    purge = 3
+    warn = 4

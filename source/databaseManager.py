@@ -130,6 +130,7 @@ class DBConnector:
         conn: aiomysql.Connection = await self.dbPool.acquire()
         # could use a with statement but i want to re-use this conn object
         await conn.ping(reconnect=True)
+        await conn.autocommit(True)
         return conn
 
     async def execute(self, query: str, getOne=False):
@@ -139,6 +140,7 @@ class DBConnector:
         conn = await self._verifyConnection()
         try:
             async with conn.cursor(aiomysql.SSDictCursor) as cursor:
+                log.debug(f"Executing: {query}")
                 await cursor.execute(query)  # execute the query
                 if not getOne:
                     result = await cursor.fetchall()

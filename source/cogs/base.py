@@ -1,4 +1,9 @@
+import io
+import json
 import logging
+import textwrap
+import traceback
+from contextlib import redirect_stdout
 
 import aiohttp
 import discord
@@ -49,6 +54,63 @@ class Base(commands.Cog):
                                 return
             await ctx.send("I cant read that")
 
+    def get_syntax_error(self, e):
+        if e.text is None:
+            return "```py\n{0.__class__.__name__}: {0}\n```".format(e)
+        return "```py\n{0.text}{1:>{0.offset}}\n{2}: {0}```".format(
+            e, "^", type(e).__name__
+        )
+
+    @commands.command(name="exec", brief="Execute some code")
+    @commands.is_owner()
+    async def _exec(self, ctx: commands.Context, *, body: str):
+        env = {
+            "bot": self.bot,
+            "slash": self.bot.slash,
+            "ctx": ctx,
+            "channel": ctx.channel,
+            "author": ctx.author,
+            "server": ctx.guild,
+            "guild": ctx.guild,
+            "message": ctx.message,
+        }
+        env.update(globals())
+
+        if body.startswith("```") and body.endswith("```"):
+            body = "\n".join(body.split("\n")[1:-1])
+        else:
+            body = body.strip("` \n")
+
+        stdout = io.StringIO()
+
+        to_compile = "async def func():\n%s" % textwrap.indent(body, "  ")
+
+        try:
+            exec(to_compile, env)
+        except SyntaxError as e:
+            return await ctx.send(self.get_syntax_error(e))
+
+        func = env["func"]
+        try:
+            with redirect_stdout(stdout):
+                ret = await func()
+        except Exception as e:
+            value = stdout.getvalue()
+            await ctx.send("```py\n{}{}\n```".format(value, traceback.format_exc()))
+        else:
+            value = stdout.getvalue()
+            try:
+                await ctx.message.add_reaction("\u2705")
+            except:
+                pass
+
+            if ret is None:
+                if value:
+                    await ctx.send("```py\n%s\n```" % value)
+            else:
+                self._last_result = ret
+                await ctx.send("```py\n%s%s\n```" % (value, ret))
+
 
 def setup(bot):
     """Called when this cog is mounted"""
@@ -58,6 +120,6 @@ def setup(bot):
 
 def teardown(bot):
     """Called when this cog is unmounted"""
-    log.warning('Base un-mounted')
+    log.warning("Base un-mounted")
     for handler in log.handlers[:]:
         log.removeHandler(handler)

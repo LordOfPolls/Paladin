@@ -1,8 +1,10 @@
+import json
 import typing
-from pprint import pprint
+from datetime import datetime, timedelta
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
+from discord_slash import SlashCommand
 
 from . import databaseManager
 
@@ -29,9 +31,24 @@ class Bot(commands.Bot):
         self.perms = 0
         """The perms the bot needs"""
 
+        emoji = open("data/emoji.json", "r")
+        self.emoji_list = json.load(emoji)
+        emoji.close()
+        """A dict of emoji the bot uses"""
+
         super().__init__(*args, **kwargs)
 
-    async def getMessage(self, messageID: int, channel: discord.TextChannel) -> typing.Union[discord.Message, None]:
+        self.slash = SlashCommand(
+            self,
+            sync_commands=False
+            if "sync_commands" not in kwargs
+            else kwargs["sync_commands"],
+        )
+        """The slash command system"""
+
+    async def getMessage(
+        self, messageID: int, channel: discord.TextChannel
+    ) -> typing.Union[discord.Message, None]:
         """Gets a message using the id given
         we dont use the built in get_message due to poor rate limit
         """
@@ -53,3 +70,28 @@ class Bot(commands.Bot):
         except Exception as e:
             print(e)
         return None
+
+    @staticmethod
+    def formatDate(date: datetime) -> str:
+        return date.strftime("%b %d %Y %H:%M:%S")
+
+    @staticmethod
+    def strf_delta(timeDelta: timedelta) -> str:
+        """Formats timedelta into a human readable string"""
+        years, days = divmod(timeDelta.days, 365)
+        hours, rem = divmod(timeDelta.seconds, 3600)
+        minutes, seconds = divmod(rem, 60)
+
+        yearsFmt = f"{years} year{'s' if years > 1 or years == 0 else ''}"
+        daysFmt = f"{days} day{'s' if days > 1 or days == 0 else ''}"
+        hoursFmt = f"{hours} hour{'s' if hours > 1 or hours == 0 else ''}"
+        minutesFmt = f"{minutes} minute{'s' if minutes > 1 or minutes == 0 else ''}"
+        secondsFmt = f"{seconds} second{'s' if seconds > 1 or seconds == 0 else ''}"
+
+        if years >= 1:
+            return f"{yearsFmt} and {daysFmt}"
+        if days >= 1:
+            return f"{daysFmt} and {hoursFmt}"
+        if hours >= 1:
+            return f"{hoursFmt} and {minutesFmt}"
+        return f"{minutesFmt} and {secondsFmt}"

@@ -14,19 +14,24 @@ from discord_slash.utils import manage_commands
 from . import utilities, dataclass
 
 log: logging.Logger = utilities.getLog("Bot", level=logging.DEBUG)
-intents = discord.Intents.default()
-intents.members = True
+intents = discord.Intents.all()
+intents.presences = False
 
 bot = dataclass.Bot(
-    command_prefix="<",
+    command_prefix=">",
     description="Paladin",
     case_insensitive=True,
     intents=intents,
     cogList=[
+        "source.cogs.base",
+        "source.cogs.modmail",
+        "source.cogs.modlog",
+        "source.cogs.baseModeration",
     ],
-    help_command=None
+    help_command=None,
+    sync_commands=False,
 )
-slash = SlashCommand(bot, sync_commands=False, override_type=True)  # register a slash command system
+slash = bot.slash
 
 slash.logger = utilities.getLog("slashAPI", logging.DEBUG)
 bot.perms = "8"
@@ -49,7 +54,9 @@ async def startupTasks():
     log.debug("Running startup tasks...")
     bot.appInfo = await bot.application_info()
     bot.startTime = datetime.now()
-    await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game("Startup"))
+    await bot.change_presence(
+        status=discord.Status.do_not_disturb, activity=discord.Game("Startup")
+    )
 
     log.info("Establishing connection to database...")
     try:
@@ -73,18 +80,21 @@ async def on_ready():
     log.info(f"Logged in as       : {bot.user.name} #{bot.user.discriminator}")
     log.info(f"User ID            : {bot.user.id}")
     log.info(f"Start Time         : {bot.startTime.ctime()}")
-    log.info(f"DB Connection Type : "
-             f"{'Tunneled' if bot.db.tunnel and bot.db.dbPool else 'Direct' if bot.db.dbPool else 'Not Connected'}")
+    log.info(
+        f"DB Connection Type : "
+        f"{'Tunneled' if bot.db.tunnel and bot.db.dbPool else 'Direct' if bot.db.dbPool else 'Not Connected'}"
+    )
     log.info(f"Server Count       : {len(bot.guilds)}")
     log.info(f"Cog Count          : {len(bot.cogs)}")
     log.info(f"Command Count      : {len(slash.commands)}")
     log.info(f"Discord.py Version : {discord.__version__}")
     log.info("END-INFO".center(40, "-"))
-    for guild in slash.commands:
-        print(f"{guild} commands".center(40, "="))
-        for command in slash.commands[guild].values():
-            print(command.name)
-    await bot.change_presence(status=discord.Status.online, activity=discord.Game("with tags"))
+    await bot.change_presence(
+        status=discord.Status.online,
+        activity=discord.Activity(
+            type=discord.ActivityType.watching, name="over your server"
+        ),
+    )
 
 
 @bot.event
@@ -109,9 +119,12 @@ async def on_command_error(ctx, ex):
 @bot.event
 async def on_slash_command_error(ctx, ex):
     def logError():
-        log.error('Ignoring exception in command {}: {}'.format(ctx.command,
-                                                                "".join(traceback.format_exception(type(ex), ex,
-                                                                                                   ex.__traceback__))))
+        log.error(
+            "Ignoring exception in command {}: {}".format(
+                ctx.command,
+                "".join(traceback.format_exception(type(ex), ex, ex.__traceback__)),
+            )
+        )
 
     if isinstance(ex, commands.errors.CommandOnCooldown):
         lines = [
@@ -123,26 +136,33 @@ async def on_slash_command_error(ctx, ex):
             "Where's that damn forth chaos emerald",
             "You know what they say, the more the merrier",
             "Oh no",
-            "Spam time?"
-            ""
+            "Spam time?" "",
         ]
-        remaining = re.search(r'\d+\.', str(ex))
-        await ctx.send(f"`{choice(lines)}`\n"
-                       f"You're making tags too fast. Wait {remaining.group().replace(',', 's')} before using that again ")
+        remaining = re.search(r"\d+\.", str(ex))
+        await ctx.send(
+            f"`{choice(lines)}`\n"
+            f"You're making tags too fast. Wait {remaining.group().replace(',', 's')} before using that again "
+        )
     elif isinstance(ex, discord.errors.Forbidden):
         log.error(f"Missing permissions in {ctx.guild.name}")
-        await ctx.send(f"**Error:** I am missing permissions.\n"
-                       f"Please make sure i can access this channel, manage messages, embed links, and add reactions.")
+        await ctx.send(
+            f"**Error:** I am missing permissions.\n"
+            f"Please make sure i can access this channel, manage messages, embed links, and add reactions."
+        )
     elif isinstance(ex, discord_slash.error.CheckFailure):
         log.debug(f"Ignoring command: check failure")
     elif isinstance(ex, discord.NotFound):
         logError()
-        await ctx.send("Discord did not send the interaction correctly, this usually resolves after a few minutes, "
-                       "if it doesnt, please use `/server` and report it")
+        await ctx.send(
+            "Discord did not send the interaction correctly, this usually resolves after a few minutes, "
+            "if it doesnt, please use `/server` and report it"
+        )
     else:
         logError()
-        await ctx.send("An un-handled error has occurred, and has been logged, please try again later.\n"
-                       "If this continues please use `/server` and report it in my server")
+        await ctx.send(
+            "An un-handled error has occurred, and has been logged, please try again later.\n"
+            "If this continues please use `/server` and report it in my server"
+        )
 
 
 async def guildPurge(guildID: int):
@@ -152,9 +172,7 @@ async def guildPurge(guildID: int):
     # )
     try:
         await manage_commands.remove_all_commands_in(
-            bot_id=bot.user.id,
-            bot_token=bot.http.token,
-            guild_id=guildID
+            bot_id=bot.user.id, bot_token=bot.http.token, guild_id=guildID
         )
     except:
         pass
@@ -165,7 +183,9 @@ async def on_guild_join(guild: discord.Guild):
     """Called when bot is added to a guild"""
     while not bot.is_ready():
         await asyncio.sleep(5)
-    log.info(f"Joined Guild {guild.id}. {len([m for m in guild.members if not m.bot])} users")
+    log.info(
+        f"Joined Guild {guild.id}. {len([m for m in guild.members if not m.bot])} users"
+    )
 
 
 @bot.event

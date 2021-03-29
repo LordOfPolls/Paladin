@@ -25,14 +25,15 @@ if not os.path.isfile("data/DBLogin.json"):
     DBUser = input("DB Username - ")
     DBPass = input("DB Password - ")
 
-    data = {"serverAddress": serverAddress,
-            "serverPort": serverPort,
-            "localAddress": localAddress,
-            "localPort": localPort,
-            "sshUser": sshUser,
-            "dbUser": DBUser,
-            "dbPass": DBPass
-            }
+    data = {
+        "serverAddress": serverAddress,
+        "serverPort": serverPort,
+        "localAddress": localAddress,
+        "localPort": localPort,
+        "sshUser": sshUser,
+        "dbUser": DBUser,
+        "dbPass": DBPass,
+    }
 
     f = open("data/DBLogin.json", "w")
     json.dump(data, f)
@@ -41,13 +42,13 @@ if not os.path.isfile("data/DBLogin.json"):
 f = open("data/DBLogin.json", "r")
 data = json.load(f)
 f.close()
-serverAddress = data['serverAddress']
-serverPort = data['serverPort']
-localAddress = data['localAddress']
-localPort = data['localPort']
-sshUser = data['sshUser']
-DBUser = data['dbUser']
-DBPass = data['dbPass']
+serverAddress = data["serverAddress"]
+serverPort = data["serverPort"]
+localAddress = data["localAddress"]
+localPort = data["localPort"]
+sshUser = data["sshUser"]
+DBUser = data["dbUser"]
+DBPass = data["dbPass"]
 
 
 class DBConnector:
@@ -79,24 +80,29 @@ class DBConnector:
                 host="127.0.0.1",
                 port=3306,
                 auth_plugin="mysql_native_password",
-                maxsize=10
+                maxsize=10,
             )
         except:
             # Probably working on a dev machine, create a tunnel
-            log.warning("Unable to connect to database, attempting to create SSH Tunnel")
-            self.tunnel = sshtunnel.open_tunnel((serverAddress, serverPort),
-                                                ssh_username=sshUser,
-                                                ssh_pkey="opensshkey.ppk",
-                                                remote_bind_address=(localAddress, localPort),
-                                                local_bind_address=(localAddress, localPort),
-                                                logger=utilities.getLog("tunnel", logging.CRITICAL))
+            log.warning(
+                "Unable to connect to database, attempting to create SSH Tunnel"
+            )
+            self.tunnel = sshtunnel.open_tunnel(
+                (serverAddress, serverPort),
+                ssh_username=sshUser,
+                ssh_pkey="opensshkey.ppk",
+                remote_bind_address=(localAddress, localPort),
+                local_bind_address=(localAddress, localPort),
+                logger=utilities.getLog("tunnel", logging.CRITICAL),
+            )
             self.tunnel.start()
             while not self.tunnel.is_active:
                 # Wait for the tunnel to be considered active
                 time.sleep(0.1)
             log.spam(
                 f"Connected to DB Server: {self.tunnel.is_active}. "
-                f"LocalAddr: {self.tunnel.local_bind_host}:{self.tunnel.local_bind_port}")
+                f"LocalAddr: {self.tunnel.local_bind_host}:{self.tunnel.local_bind_port}"
+            )
             log.debug("Attempting to connect to tunneled database")
             try:
                 self.dbPool = await aiomysql.create_pool(
@@ -112,15 +118,17 @@ class DBConnector:
                 exit(1)
 
         # Configure db to accept emoji inputs (i wish users didnt do this, but i cant stop em)
-        await self.execute('SET NAMES utf8mb4;')
-        await self.execute('SET CHARACTER SET utf8mb4;')
-        await self.execute('SET character_set_connection=utf8mb4;')
+        await self.execute("SET NAMES utf8mb4;")
+        await self.execute("SET CHARACTER SET utf8mb4;")
+        await self.execute("SET character_set_connection=utf8mb4;")
 
         databases = await self.execute("SHOW SCHEMAS")
         log.info(f"Database connection established. {len(databases)} schemas found")
         return True
 
-    async def execute(self, query: str, getOne: bool = False) -> typing.Union[dict, None]:
+    async def execute(
+        self, query: str, getOne: bool = False
+    ) -> typing.Union[dict, None]:
         """
         Execute a database query
         :param query: The query you want to make
@@ -131,7 +139,9 @@ class DBConnector:
         try:
             # make sure we have a connection first
             async with self.dbPool.acquire() as conn:
-                await conn.ping(reconnect=True)  # ping the database, to make sure we have a connection
+                await conn.ping(
+                    reconnect=True
+                )  # ping the database, to make sure we have a connection
         except Exception as e:
             log.error(f"{e}")
             await asyncio.sleep(5)  # sleep for a few seconds
@@ -177,7 +187,7 @@ Access formats as instance.t, instance.dt, or instance.sql.
 https://stackoverflow.com/a/59906601
     """
 
-    f = '%Y-%m-%d %H:%M:%S'
+    f = "%Y-%m-%d %H:%M:%S"
 
     def __init__(self, *arg, id=None) -> None:
         self.id = id
@@ -200,13 +210,12 @@ https://stackoverflow.com/a/59906601
                 self.sql = self._sql
             elif isinstance(arg, str):
                 self.sql = arg
-                if '.' not in arg:
+                if "." not in arg:
                     self.dt = datetime.strptime(self.sql, Time.f)
                 else:
-                    normal, fract = arg.split('.')
+                    normal, fract = arg.split(".")
                     py_t = datetime.strptime(normal, Time.f)
-                    self.dt = py_t.replace(
-                        microsecond=int(fract.ljust(6, '0')[:6]))
+                    self.dt = py_t.replace(microsecond=int(fract.ljust(6, "0")[:6]))
                 self.t = self.dt.timestamp()
 
     @property
@@ -217,7 +226,7 @@ https://stackoverflow.com/a/59906601
     def _sql(self) -> str:
         t = self.dt
         std = t.strftime(Time.f)
-        fract = f'.{str(round(t.microsecond, -3))[:3]}'
+        fract = f".{str(round(t.microsecond, -3))[:3]}"
         return std + fract
 
     def __str__(self) -> str:

@@ -126,47 +126,34 @@ class DBConnector:
         log.info(f"Database connection established. {len(databases)} schemas found")
         return True
 
-    async def execute(
-        self, query: str, getOne: bool = False
-    ) -> typing.Union[dict, None]:
-        """
-        Execute a database query
-        :param query: The query you want to make
-        :param getOne: If you only want one item, set this to True
-        :return: a dict representing the mysql result, or None
-        """
+    async def _verifyConnection(self) -> aiomysql.Connection:
+        conn: aiomysql.Connection = await self.dbPool.acquire()
+        # could use a with statement but i want to re-use this conn object
+        await conn.ping(reconnect=True)
+        return conn
 
+    async def execute(self, query: str, getOne=False):
+        """Wraps the normal execute call"""
+        cursor: aiomysql.SSDictCursor
+
+        conn = await self._verifyConnection()
         try:
-            # make sure we have a connection first
-            async with self.dbPool.acquire() as conn:
-                await conn.ping(
-                    reconnect=True
-                )  # ping the database, to make sure we have a connection
-        except Exception as e:
-            log.error(f"{e}")
-            await asyncio.sleep(5)  # sleep for a few seconds
-            await self.connect()  # Attempt to reconnect
+            async with conn.cursor(aiomysql.SSDictCursor) as cursor:
+                await cursor.execute(query)  # execute the query
+                if not getOne:
+                    result = await cursor.fetchall()
+                else:
+                    result = await cursor.fetchone()
 
-        try:
-            log.debug(f"Executing Query - {query}")
-
-            async with self.dbPool.acquire() as connection:
-                async with connection.cursor(aiomysql.SSDictCursor) as cursor:
-                    await cursor.execute(query)  # execute the query
-                    if not getOne:
-                        result = await cursor.fetchall()
-                    else:
-                        result = await cursor.fetchone()
-                    if isinstance(result, tuple):
-                        if len(result) == 0:
-                            return None
-                    await cursor.close()
-                await connection.commit()
+                if isinstance(result, tuple):
+                    result = None
+            conn.close()
             self.operations += 1
             return result
         except Exception as e:
             log.error(e)
             if "cannot connect" in str(e):
+                # potential connection issue, retry in a few seconds
                 await asyncio.sleep(5)
                 await self.execute(query=query, getOne=getOne)
         return None

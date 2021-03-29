@@ -17,3 +17,5 @@ class ModActions(enum.IntEnum):
     ban = 2
     purge = 3
     warn = 4
+    roleGive = 5
+    roleRem = 6

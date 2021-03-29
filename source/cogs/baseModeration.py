@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import enum
@@ -15,6 +16,13 @@ from source.enums import *
 
 log: logging.Logger = utilities.getLog("Cog::BaseMod")
 
+reasonOption = manage_commands.create_option(
+    name="reason",
+    description="Specify a reason for this action",
+    option_type=str,
+    required=False,
+)
+
 
 class BaseModeration(commands.Cog):
     """Configuration commands"""
@@ -25,6 +33,19 @@ class BaseModeration(commands.Cog):
         self.slash = bot.slash
 
         self.emoji = bot.emoji_list
+
+        async def dummy(**kwargs):
+            """Used in the event modlog isnt loaded"""
+            log.error("Failed to log action")
+
+        self.log_action = dummy
+
+    async def setup(self):
+        try:
+            cog = self.bot.get_cog("ModLog")
+            self.log_action = cog.log_mod_action
+        except:
+            self.log_action = self.log_action
 
     @cog_ext.cog_subcommand(
         base="messages",
@@ -49,6 +70,7 @@ class BaseModeration(commands.Cog):
                 option_type=7,
                 required=False,
             ),
+            reasonOption,
         ],
         guild_ids=[701347683591389185],
     )
@@ -60,6 +82,7 @@ class BaseModeration(commands.Cog):
         channel: typing.Union[
             discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel
         ] = None,
+        reason: str = None,
     ):
 
         totalDeleted = set()
@@ -111,6 +134,16 @@ class BaseModeration(commands.Cog):
         except:
             await ctx.send(embed=emb)
 
+        asyncio.ensure_future(
+            self.log_action(
+                action=ModActions.purge,
+                guild=ctx.guild,
+                reason=reason,
+                channel=channel,
+                users=[ctx.author],
+            )
+        )
+
     @cog_ext.cog_subcommand(
         base="user",
         subcommand_group="role",
@@ -126,6 +159,7 @@ class BaseModeration(commands.Cog):
                 description="The user in question",
                 required=False,
             ),
+            reasonOption,
         ],
     )
     async def giveRole(
@@ -133,6 +167,7 @@ class BaseModeration(commands.Cog):
         ctx: SlashContext,
         role: discord.Role,
         user: discord.Member = None,
+        reason: str = None,
     ):
         if not user:
             user = ctx.author
@@ -149,9 +184,19 @@ class BaseModeration(commands.Cog):
             await ctx.send(f"{user.name} #{user.discriminator} now has {role.name}")
         except Exception as e:
             log.error(f"Error adding role: {e}")
-            await ctx.send(
+            return await ctx.send(
                 f"Unable to add {role.name} to {user.name} #{user.discriminator}"
             )
+
+        asyncio.ensure_future(
+            self.log_action(
+                action=ModActions.roleGive,
+                guild=ctx.guild,
+                reason=reason,
+                role=role,
+                users=[ctx.author, user],
+            )
+        )
 
     @cog_ext.cog_subcommand(
         base="user",
@@ -171,6 +216,7 @@ class BaseModeration(commands.Cog):
                 description="The user in question",
                 required=False,
             ),
+            reasonOption,
         ],
     )
     async def removeRole(
@@ -178,6 +224,7 @@ class BaseModeration(commands.Cog):
         ctx: SlashContext,
         role: discord.Role,
         user: discord.Member = None,
+        reason: str = None,
     ):
         if not user:
             user = ctx.author
@@ -196,9 +243,19 @@ class BaseModeration(commands.Cog):
             )
         except Exception as e:
             log.error(f"Error adding role: {e}")
-            await ctx.send(
+            return await ctx.send(
                 f"Unable to remove {role.name} from {user.name} #{user.discriminator}"
             )
+
+        asyncio.ensure_future(
+            self.log_action(
+                action=ModActions.roleRem,
+                guild=ctx.guild,
+                reason=reason,
+                role=role,
+                users=[ctx.author, user],
+            )
+        )
 
     @cog_ext.cog_subcommand(
         base="user",
@@ -210,20 +267,32 @@ class BaseModeration(commands.Cog):
                 description="The user in question",
                 option_type=6,
                 required=True,
-            )
+            ),
+            reasonOption,
         ],
     )
     async def kick(
-        self, ctx: SlashContext, user: typing.Union[discord.Member, discord.User]
+        self,
+        ctx: SlashContext,
+        user: typing.Union[discord.Member, discord.User],
+        reason: str = None,
     ):
         try:
             await user.kick()
             await ctx.send(f"Kicked {user.name} #{user.discriminator}")
         except Exception as e:
             log.error(f"Failed to kick: {e}")
-            await ctx.send(
+            return await ctx.send(
                 f"Failed to kick {user.name} #{user.discriminator}", hidden=True
             )
+        asyncio.ensure_future(
+            self.log_action(
+                action=ModActions.kick,
+                guild=ctx.guild,
+                reason=reason,
+                users=[ctx.author, user],
+            )
+        )
 
     @cog_ext.cog_subcommand(
         base="user",
@@ -235,20 +304,32 @@ class BaseModeration(commands.Cog):
                 description="The user in question",
                 option_type=6,
                 required=True,
-            )
+            ),
+            reasonOption,
         ],
     )
     async def ban(
-        self, ctx: SlashContext, user: typing.Union[discord.Member, discord.User]
+        self,
+        ctx: SlashContext,
+        user: typing.Union[discord.Member, discord.User],
+        reason: str = None,
     ):
         try:
             await user.ban()
             await ctx.send(f"Banned {user.name} #{user.discriminator}")
         except Exception as e:
             log.error(f"Failed to ban: {e}")
-            await ctx.send(
+            return await ctx.send(
                 f"Failed to ban {user.name} #{user.discriminator}", hidden=True
             )
+        asyncio.ensure_future(
+            self.log_action(
+                action=ModActions.ban,
+                guild=ctx.guild,
+                reason=reason,
+                users=[ctx.author, user],
+            )
+        )
 
     @cog_ext.cog_subcommand(
         base="user",

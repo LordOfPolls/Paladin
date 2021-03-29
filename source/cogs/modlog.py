@@ -1,3 +1,5 @@
+import asyncio
+import base64
 import json
 import logging
 import enum
@@ -46,6 +48,53 @@ class ModLog(commands.Cog):
             avatar_url=channel.guild.icon_url,
         )
 
+    async def _get_new_action_id(self, guild: discord.Guild) -> int:
+        """Gets an action ID for a new action"""
+        count = await self.bot.db.execute(
+            f"SELECT COUNT(*) FROM paladin.modActions WHERE guildID = '{guild.id}'",
+            getOne=True,
+        )
+        actionID = int(count["COUNT(*)"]) + 1
+        return actionID
+
+    async def _writeActionToDb(
+        self,
+        guild: discord.Guild,
+        modAction: ModActions,
+        moderator: discord.Member,
+        reason: str,
+        message: discord.Message,
+        actionID: typing.Optional[int] = None,
+        user: typing.Optional[discord.Member] = None,
+        role: typing.Optional[discord.Role] = None,
+    ):
+        """Writes an action to the database"""
+        try:
+            if actionID is None:
+                actionID = await self._get_new_action_id(guild)
+
+            reason = json.dumps(reason)
+            reason = base64.b64encode(reason.encode()).decode("utf-8")
+            query = (
+                "INSERT INTO paladin.modActions (actionID, guildID, action, moderatorID, userID, roleID, reason, "
+                "messageID) VALUES ({actionID}, '{guild}', {action}, '{modID}', {userID}, {role}, '{reason}', "
+                "'{messageID}')".format(
+                    actionID=actionID,
+                    guild=guild.id,
+                    action=modAction,
+                    modID=moderator.id,
+                    userID=f"'{user.id}'" if user else "NULL",
+                    role=f"'{role.id}'" if role else "NULL",
+                    reason=await self.bot.db.escape(reason),
+                    messageID=message.id,
+                )
+            )
+            print(repr(query))
+            log.info("writing to db")
+            await self.bot.db.execute(query)
+        except Exception as e:
+            log.error(e)
+
     async def setup(self):
         """The startup tasks for this cog"""
         self.bot.add_listener(self.on_message, "on_message")
@@ -59,7 +108,7 @@ class ModLog(commands.Cog):
         self.bot.add_listener(self.on_purge, "on_raw_bulk_message_delete")
 
     async def log_mod_action(
-        self, action: str, guild: discord.Guild, reason: str = None, **kwargs
+        self, action: ModActions, guild: discord.Guild, reason: str = None, **kwargs
     ):
         """Logs a moderation action"""
         channel: discord.TextChannel = self.bot.get_channel(743377002647519274)
@@ -70,9 +119,10 @@ class ModLog(commands.Cog):
 
         moderator = users[0]
         user = users[1] if len(users) == 2 else None
-        token = 1
+        role = kwargs.get("role")
+        token = await self._get_new_action_id(guild)
 
-        if action == ModActions.kick or ModActions.ban:
+        if action == ModActions.kick or action == ModActions.ban:
             emb.title = (
                 f"{self.emoji['banned']} User Banned"
                 if action == ModActions.ban
@@ -99,21 +149,48 @@ class ModLog(commands.Cog):
             )
             emb.add_field(name="Warnings", value=warnings, inline=False)
 
+        elif action == ModActions.roleGive or action == ModActions.roleRem:
+            emb.title = f"{self.emoji['members']}Role {'Given' if action == ModActions.roleGive else 'Removed'}"
+            emb.add_field(
+                name="User",
+                value=f"{user.name} #{user.discriminator} ({user.mention})",
+                inline=False,
+            )
+            emb.add_field(name="Role", value=role.mention, inline=False)
+
         emb.add_field(
             name="Moderator",
             value=f"{moderator.name} #{moderator.discriminator} ({moderator.mention})",
             inline=False,
         )
 
+        reason = (
+            reason
+            if reason is not None
+            else f"**Moderator:** Please use `/reason {token}`"
+        )
+
         emb.add_field(
             name="Reason",
-            value=reason
-            if reason
-            else "**Moderator:** Please use ",  # todo: add case numbers
+            value=reason,
             inline=False,
         )
 
-        await channel.send(embed=emb, allowed_mentions=discord.AllowedMentions.none())
+        msg = await channel.send(
+            embed=emb, allowed_mentions=discord.AllowedMentions.none()
+        )
+        await asyncio.create_task(
+            self._writeActionToDb(
+                guild=guild,
+                actionID=token,
+                modAction=action,
+                moderator=moderator,
+                reason=reason,
+                message=msg,
+                user=user,
+                role=role,
+            )
+        )
 
     async def eventHandler(self, event, **kwargs):
         """Handles all the discord py events"""

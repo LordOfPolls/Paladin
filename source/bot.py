@@ -71,7 +71,7 @@ async def startupTasks():
             await _c.setup()
 
     bot.paladinEvents.process = True
-    asyncio.ensure_future(bot.paladinEvents.event_loop())
+    bot.paladinEvents.task = asyncio.create_task(bot.paladinEvents.event_loop())
 
 
 @bot.event

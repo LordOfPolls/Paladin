@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "paladin"
+version = "0.1.0"
+description = "A discord moderation bot using slash commands"
+authors = ["LordOfPolls <ddavidallen13@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+discord = "^1.0.1"
+discord-py-slash-command = { git = "https://github.com/LordOfPolls/discord-py-slash-command.git", branch = "override" }
+colorlog = "^4.8.0"
+aiomysql = "^0.0.21"
+sshtunnel = "^0.4.0"
+fuzzywuzzy = "^0.18.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.extras]
+fuzzywuzzy = ["speedup"]
+
+[tool.black]
+line-length = 120
+use_parentheses = true
+ensure_newline_before_comments = true
+include_trailing_comma = true
+force_grid_wrap = 0

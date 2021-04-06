@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import os
-import typing
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from time import time, sleep
@@ -84,9 +83,7 @@ class DBConnector:
             )
         except:
             # Probably working on a dev machine, create a tunnel
-            log.warning(
-                "Unable to connect to database, attempting to create SSH Tunnel"
-            )
+            log.warning("Unable to connect to database, attempting to create SSH Tunnel")
             self.tunnel = sshtunnel.open_tunnel(
                 (serverAddress, serverPort),
                 ssh_username=sshUser,

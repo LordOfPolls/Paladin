@@ -1,17 +1,10 @@
-import asyncio
-import json
 import logging
-import enum
-import typing
 from datetime import datetime, timedelta
 
-import discord
 from discord.ext import commands
 from discord_slash import SlashContext, cog_ext
-from discord_slash.utils import manage_commands
 
-from source import utilities, dataclass, messageObject
-
+from source import utilities, dataclass
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::BaseMod")
@@ -128,9 +121,7 @@ class BaseModeration(commands.Cog):
         name="add",
         description="Give a user a role",
         options=[
-            manage_commands.create_option(
-                name="role", description="The role to add", option_type=8, required=True
-            ),
+            manage_commands.create_option(name="role", description="The role to add", option_type=8, required=True),
             manage_commands.create_option(
                 name="user",
                 option_type=6,
@@ -153,18 +144,14 @@ class BaseModeration(commands.Cog):
         await ctx.defer()
 
         if role.id in [r.id for r in user.roles]:
-            return await ctx.send(
-                f"{user.name} #{user.discriminator} already has {role.name}"
-            )
+            return await ctx.send(f"{user.name} #{user.discriminator} already has {role.name}")
 
         try:
             await user.add_roles(role)
             await ctx.send(f"{user.name} #{user.discriminator} now has {role.name}")
         except Exception as e:
             log.error(f"Error adding role: {e}")
-            return await ctx.send(
-                f"Unable to add {role.name} to {user.name} #{user.discriminator}"
-            )
+            return await ctx.send(f"Unable to add {role.name} to {user.name} #{user.discriminator}")
 
         await self.bot.paladinEvents.add_item(
             Action(
@@ -211,20 +198,14 @@ class BaseModeration(commands.Cog):
         await ctx.defer()
 
         if role not in user.roles:
-            return await ctx.send(
-                f"{user.name} #{user.discriminator} does not have {role.name}"
-            )
+            return await ctx.send(f"{user.name} #{user.discriminator} does not have {role.name}")
 
         try:
             await user.remove_roles(role)
-            await ctx.send(
-                f"{user.name} #{user.discriminator} no longer has {role.name}"
-            )
+            await ctx.send(f"{user.name} #{user.discriminator} no longer has {role.name}")
         except Exception as e:
             log.error(f"Error adding role: {e}")
-            return await ctx.send(
-                f"Unable to remove {role.name} from {user.name} #{user.discriminator}"
-            )
+            return await ctx.send(f"Unable to remove {role.name} from {user.name} #{user.discriminator}")
 
         await self.bot.paladinEvents.add_item(
             Action(
@@ -262,9 +243,7 @@ class BaseModeration(commands.Cog):
             await ctx.send(f"Kicked {user.name} #{user.discriminator}")
         except Exception as e:
             log.error(f"Failed to kick: {e}")
-            return await ctx.send(
-                f"Failed to kick {user.name} #{user.discriminator}", hidden=True
-            )
+            return await ctx.send(f"Failed to kick {user.name} #{user.discriminator}", hidden=True)
         await self.bot.paladinEvents.add_item(
             Action(
                 actionType=ModActions.kick,
@@ -300,9 +279,7 @@ class BaseModeration(commands.Cog):
             await ctx.send(f"Banned {user.name} #{user.discriminator}")
         except Exception as e:
             log.error(f"Failed to ban: {e}")
-            return await ctx.send(
-                f"Failed to ban {user.name} #{user.discriminator}", hidden=True
-            )
+            return await ctx.send(f"Failed to ban {user.name} #{user.discriminator}", hidden=True)
         await self.bot.paladinEvents.add_item(
             Action(
                 actionType=ModActions.ban,
@@ -326,18 +303,14 @@ class BaseModeration(commands.Cog):
             )
         ],
     )
-    async def userInfo(
-        self, ctx: SlashContext, user: typing.Union[discord.Member, discord.User]
-    ):
+    async def userInfo(self, ctx: SlashContext, user: typing.Union[discord.Member, discord.User]):
         emb = discord.Embed(colour=discord.Colour.blurple())
         emb.set_thumbnail(url=user.avatar_url)
         emb.description = ""
 
         # names
         emb.add_field(name="ID", value=user.id, inline=False)
-        emb.add_field(
-            name="Username", value=f"{user.name} #{user.discriminator}", inline=False
-        )
+        emb.add_field(name="Username", value=f"{user.name} #{user.discriminator}", inline=False)
         if user.display_name != user.name:
             emb.add_field(name="Display name", value=user.display_name, inline=False)
         emb.add_field(

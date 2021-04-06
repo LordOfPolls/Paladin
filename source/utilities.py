@@ -1,15 +1,13 @@
 import logging
 import pickle
+from concurrent.futures.thread import ThreadPoolExecutor
 
 import colorlog
 from colorlog import ColoredFormatter
-from concurrent.futures.thread import ThreadPoolExecutor
 
 import source.pagination as pagination
 
 paginator = pagination
-
-from discord.ext import commands
 
 thread_pool = ThreadPoolExecutor(max_workers=2)  # a thread pool
 
@@ -34,15 +32,15 @@ def getLog(filename, level=logging.DEBUG) -> logging:
         datefmt="%H:%M:%S",
         reset=True,
         log_colors={
-            'DEBUG': 'cyan',
-            'INFO': 'green',
-            'WARNING': 'yellow',
-            'ERROR': 'red',
-            'CRITICAL': 'red,bg_yellow',
-            'SPAM': 'purple'
+            "DEBUG": "cyan",
+            "INFO": "green",
+            "WARNING": "yellow",
+            "ERROR": "red",
+            "CRITICAL": "red,bg_yellow",
+            "SPAM": "purple",
         },
         secondary_log_colors={},
-        style='{'
+        style="{",
     )
 
     streamHandler.setLevel(level)

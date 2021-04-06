@@ -44,15 +44,11 @@ class Bot(commands.Bot):
 
         self.slash = SlashCommand(
             self,
-            sync_commands=False
-            if "sync_commands" not in kwargs
-            else kwargs["sync_commands"],
+            sync_commands=False if "sync_commands" not in kwargs else kwargs["sync_commands"],
         )
         """The slash command system"""
 
-    async def getMessage(
-        self, messageID: int, channel: discord.TextChannel
-    ) -> typing.Union[discord.Message, None]:
+    async def getMessage(self, messageID: int, channel: discord.TextChannel) -> typing.Union[discord.Message, None]:
         """Gets a message using the id given
         we dont use the built in get_message due to poor rate limit
         """

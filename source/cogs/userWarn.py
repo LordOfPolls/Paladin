@@ -1,14 +1,9 @@
-import asyncio
 import logging
-import typing
 
-import discord
 from discord.ext import commands
 from discord_slash import SlashContext, cog_ext
-from discord_slash.utils import manage_commands
 
-from source import utilities, dataclass, messageObject
-
+from source import utilities, dataclass
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::warn")
@@ -31,9 +26,7 @@ class UserWarnings(commands.Cog):
         )
         if data is None:
             # create a user entry
-            await self.bot.db.execute(
-                f"INSERT INTO paladin.users (userID, guildID) VALUES ('{user.id}', '{guild.id}')"
-            )
+            await self.bot.db.execute(f"INSERT INTO paladin.users (userID, guildID) VALUES ('{user.id}', '{guild.id}')")
             data = {
                 "userID": str(user.id),
                 "guildID": str(guild.id),
@@ -67,9 +60,7 @@ class UserWarnings(commands.Cog):
         userData = await self.get_user(user, ctx.guild)
         warning_num = int(userData["warnings"]) + 1
 
-        embed = discord.Embed(
-            title=f"Warning for {user.name} #{user.discriminator}", color=0xE7C30D
-        )
+        embed = discord.Embed(title=f"Warning for {user.name} #{user.discriminator}", color=0xE7C30D)
         embed.add_field(
             name="Warning LVL.1",
             value=":white_check_mark:" if warning_num >= 1 else ":x:",

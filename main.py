@@ -20,11 +20,12 @@ def sanityChecks() -> bool:
 
 def main():
     from source import bot
+
     log.info("Ready, calling bot.py")
     bot.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logo = r"""
 __________        .__              .___.__        
 \______   \_____  |  | _____     __| _/|__| ____  

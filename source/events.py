@@ -2,9 +2,6 @@ import asyncio
 import inspect
 import typing
 
-import discord
-from discord.ext import tasks
-
 from source import utilities, shared
 
 log = utilities.getLog("events")

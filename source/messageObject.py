@@ -1,6 +1,7 @@
+import asyncio
 import json
 import typing
-import asyncio
+
 from source import dataclass, utilities
 
 log = utilities.getLog("message")
@@ -88,11 +89,7 @@ class Message:
             await asyncio.sleep(1)
 
         log.debug("Storing message object...")
-        title = (
-            f"'{await self.db.escape(json.dumps(self.title))}'"
-            if self.title is not None
-            else None
-        )
+        title = f"'{await self.db.escape(json.dumps(self.title))}'" if self.title is not None else None
         content = await self.db.escape(json.dumps(self.content))
         await self.db.execute(
             f"INSERT INTO paladin.messages (guildID, authorID, title, content, open) VALUES "
@@ -110,11 +107,7 @@ class Message:
             await asyncio.sleep(1)
 
         log.debug("Updating message object...")
-        title = (
-            f"'{await self.db.escape(json.dumps(self.title))}'"
-            if self.title is not None
-            else None
-        )
+        title = f"'{await self.db.escape(json.dumps(self.title))}'" if self.title is not None else None
         content = await self.db.escape(json.dumps(self.content))
         await self.db.execute(
             f"UPDATE paladin.messages SET "

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import typing
 from datetime import datetime, timedelta
@@ -47,6 +48,51 @@ class Bot(commands.Bot):
             sync_commands=False if "sync_commands" not in kwargs else kwargs["sync_commands"],
         )
         """The slash command system"""
+
+    async def close(self):
+        """Close the connection to discord"""
+
+        for extension in tuple(self.extensions):
+            try:
+                self.unload_extension(extension)
+            except Exception:
+                pass
+
+        for cog in tuple(self.cogs):
+            try:
+                self.remove_cog(cog)
+            except Exception:
+                pass
+
+        # let the event loops close gracefully
+        while not self.paladinEvents._queue.empty():
+            await asyncio.sleep(0)
+        self.paladinEvents.process = False
+        if self.paladinEvents.task is not None:
+            while not self.paladinEvents.task.done():
+                await asyncio.sleep(0)
+
+        # close db connection
+        self.db.dbPool.close()
+        await self.db.dbPool.wait_closed()
+
+        if self._closed:
+            return
+
+        await self.http.close()
+        self._closed = True
+
+        for voice in self.voice_clients:
+            try:
+                await voice.disconnect()
+            except Exception:
+                # if an error happens during disconnects, disregard it.
+                pass
+
+        if self.ws is not None and self.ws.open:
+            await self.ws.close(code=1000)
+
+        self._ready.clear()
 
     async def getMessage(self, messageID: int, channel: discord.TextChannel) -> typing.Union[discord.Message, None]:
         """Gets a message using the id given

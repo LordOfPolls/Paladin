@@ -54,7 +54,7 @@ class DBConnector:
     def __init__(self, loop=asyncio.get_event_loop()):
         self.tunnel = None
         self.loop = loop
-        self.dbPool = None
+        self.dbPool: aiomysql.Pool = None
         self.threadPool = ThreadPoolExecutor(max_workers=4)
         self.operations = 0
         self.time = Time
@@ -79,7 +79,7 @@ class DBConnector:
                 host="127.0.0.1",
                 port=3306,
                 auth_plugin="mysql_native_password",
-                maxsize=10,
+                maxsize=0,
             )
         except:
             # Probably working on a dev machine, create a tunnel
@@ -124,11 +124,29 @@ class DBConnector:
         return True
 
     async def _verifyConnection(self) -> aiomysql.Connection:
-        conn: aiomysql.Connection = await self.dbPool.acquire()
-        # could use a with statement but i want to re-use this conn object
-        await conn.ping(reconnect=True)
-        await conn.autocommit(True)
-        return conn
+        try:
+            log.debug(f"Verifying connection... " f"Pool: {self.dbPool.size} active | {self.dbPool.freesize} free")
+            conn: aiomysql.Connection = await self.dbPool.acquire()
+            # could use a with statement but i want to re-use this conn object
+            await conn.ping(reconnect=True)
+            await conn.autocommit(True)
+            return conn
+        except Exception as e:
+            log.error(e)
+            raise e
+
+    async def _return_and_release(self, conn: aiomysql.Connection):
+        """Closes a connection and returns it to the pool"""
+        # note: Currently testing to see if there are any issues if i dont close the connection
+        # and just release it to the pool, shouldn't be any problems but worth testing
+
+        # conn.close()
+        # while not conn.closed:
+        #     # yield to event loop while we wait for connection to close
+        #     await asyncio.sleep(0)
+
+        self.dbPool.release(conn)
+        log.spam("Connection released back into the ocean")
 
     async def execute(self, query: str, getOne=False):
         """Wraps the normal execute call"""
@@ -146,8 +164,14 @@ class DBConnector:
 
                 if isinstance(result, tuple):
                     result = None
-            conn.close()
+
+            # fire and forget a release call to let the calling function continue while
+            # the conn closes and releases in the background
+            asyncio.ensure_future(self._return_and_release(conn))
+
             self.operations += 1
+
+            # return output
             return result
         except Exception as e:
             log.error(e)

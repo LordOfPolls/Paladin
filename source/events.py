@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import traceback
 import typing
 
 from source import utilities, shared
@@ -21,7 +22,12 @@ class Event(set):
                 else:
                     await asyncio.to_thread(f, *args, **kwargs)
             except Exception as e:
-                log.error(f"Error calling {f.__name__}: {e}")
+                log.error(
+                    "Ignoring exception in {}: {}".format(
+                        f.__name__,
+                        "".join(traceback.format_exception(type(e), e, e.__traceback__)),
+                    )
+                )
 
 
 class PaladinEvents:
@@ -33,6 +39,8 @@ class PaladinEvents:
             "modAction": Event(name="modAction"),
         }
 
+        self.task = None
+
     def subscribe_to_event(self, function: typing.Callable, event="modAction"):
         """Subscribes to a mod action event"""
         self.events[event].add(function)
@@ -41,6 +49,10 @@ class PaladinEvents:
         """Add item to queue"""
         log.debug("Adding item to queue")
         await self._queue.put(item)
+
+        # if event loop isnt running, start it
+        if self.task is None or self.task.done():
+            self.task = asyncio.create_task(self.event_loop())
 
     async def get_item(self) -> shared.Action:
         """Get item from queue"""

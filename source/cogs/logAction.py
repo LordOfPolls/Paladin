@@ -137,7 +137,11 @@ class LogAction(commands.Cog):
         return emb
 
     def fmt_warn(self, action, emb):
-        emb.title = f"{self.emoji['rules']}User Warned"
+        emb.title = (
+            f"{self.emoji['rules']}User Warned"
+            if "Cleared" not in action.extra
+            else f"{self.emoji['rules']}User Warnings Cleared"
+        )
         warnings = action.extra
         emb.add_field(
             name="User",

@@ -37,7 +37,8 @@ class UserWarnings(commands.Cog):
 
     @cog_ext.cog_subcommand(
         base="user",
-        name="warn",
+        subcommand_group="warn",
+        name="add",
         description="Warn a user - 3 warnings = Kick",
         options=[
             manage_commands.create_option(
@@ -120,6 +121,49 @@ class UserWarnings(commands.Cog):
         await self.bot.db.execute(
             f"UPDATE paladin.users SET warnings={warning_num} WHERE guildID ='{ctx.guild_id}' AND userID ='{user.id}'"
         )
+
+    @cog_ext.cog_subcommand(
+        base="user",
+        subcommand_group="warn",
+        name="clear",
+        description="Clears all warnings from a user",
+        options=[
+            manage_commands.create_option(
+                name="user",
+                option_type=6,
+                description="The user in question",
+                required=True,
+            ),
+            reasonOption,
+        ],
+    )
+    async def warnClearCMD(
+        self,
+        ctx: SlashContext,
+        user: typing.Union[discord.User, discord.Member],
+        reason: str = None,
+    ):
+        await ctx.defer()
+
+        try:
+            await self.bot.db.execute(
+                f"UPDATE paladin.users SET warnings=0 WHERE guildID='{ctx.guild_id}' AND userID='{user.id}'"
+            )
+            await ctx.send(f"Cleared warnings for {user.name} #{user.discriminator}")
+        except Exception as e:
+            log.error(f"Error clearing warnings: {e}")
+            await ctx.send("Unable to clear warnings... please try again later")
+        else:
+            await self.bot.paladinEvents.add_item(
+                Action(
+                    actionType=ModActions.warn,
+                    moderator=ctx.author,
+                    guild=ctx.guild,
+                    user=user,
+                    extra="Cleared to 0",
+                    reason=reason,
+                )
+            )
 
 
 def setup(bot):

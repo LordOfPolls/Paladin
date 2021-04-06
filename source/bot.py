@@ -6,11 +6,11 @@ from datetime import datetime
 from random import choice
 
 import discord
-from discord.ext import commands
-
 import discord_slash
-from discord_slash import SlashCommand, SlashContext, error
+from discord.ext import commands
+from discord_slash import SlashContext, error
 from discord_slash.utils import manage_commands
+
 from . import utilities, dataclass
 
 log: logging.Logger = utilities.getLog("Bot", level=logging.DEBUG)
@@ -26,11 +26,12 @@ bot = dataclass.Bot(
         "source.cogs.base",
         "source.cogs.modmail",
         "source.cogs.modlog",
+        "source.cogs.logAction",
         "source.cogs.baseModeration",
         "source.cogs.userWarn",
     ],
     help_command=None,
-    sync_commands=True,
+    sync_commands=False,
 )
 slash = bot.slash
 
@@ -55,9 +56,7 @@ async def startupTasks():
     log.debug("Running startup tasks...")
     bot.appInfo = await bot.application_info()
     bot.startTime = datetime.now()
-    await bot.change_presence(
-        status=discord.Status.do_not_disturb, activity=discord.Game("Startup")
-    )
+    await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game("Startup"))
 
     log.info("Establishing connection to database...")
     try:
@@ -95,9 +94,7 @@ async def on_ready():
     log.info("END-INFO".center(40, "-"))
     await bot.change_presence(
         status=discord.Status.online,
-        activity=discord.Activity(
-            type=discord.ActivityType.watching, name="over your server"
-        ),
+        activity=discord.Activity(type=discord.ActivityType.watching, name="over your server"),
     )
 
 
@@ -175,9 +172,7 @@ async def guildPurge(guildID: int):
     #     f"DELETE FROM [placeholder] WHERE guildID='{guildID}'"
     # )
     try:
-        await manage_commands.remove_all_commands_in(
-            bot_id=bot.user.id, bot_token=bot.http.token, guild_id=guildID
-        )
+        await manage_commands.remove_all_commands_in(bot_id=bot.user.id, bot_token=bot.http.token, guild_id=guildID)
     except:
         pass
 
@@ -187,9 +182,7 @@ async def on_guild_join(guild: discord.Guild):
     """Called when bot is added to a guild"""
     while not bot.is_ready():
         await asyncio.sleep(5)
-    log.info(
-        f"Joined Guild {guild.id}. {len([m for m in guild.members if not m.bot])} users"
-    )
+    log.info(f"Joined Guild {guild.id}. {len([m for m in guild.members if not m.bot])} users")
 
 
 @bot.event

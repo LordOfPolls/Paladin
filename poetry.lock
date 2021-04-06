@@ -139,18 +139,11 @@ python-versions = "*"
 
 [[package]]
 name = "discord-py-slash-command"
-version = "1.1.1"
+version = "1.1.0"
 description = "A simple discord slash command handler for discord.py."
 category = "main"
 optional = false
 python-versions = ">=3.6"
-develop = false
-
-[package.source]
-type = "git"
-url = "https://github.com/LordOfPolls/discord-py-slash-command.git"
-reference = "override"
-resolved_reference = "79178affee581817e395b323473eb6449aabd830"
 
 [[package]]
 name = "discord.py"
@@ -298,7 +291,7 @@ fuzzywuzzy = []
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "c852edbed4307c331c162177185c538d18636e6eb55ebb002b35cf70d66fba4a"
+content-hash = "b128a221ceddb7d955328a57448183f45f4e04a9b1d6fb744aaf64a29a5c5ab3"
 
 [metadata.files]
 aiohttp = [
@@ -430,7 +423,10 @@ discord = [
     {file = "discord-1.0.1-py3-none-any.whl", hash = "sha256:9d4debb4a37845543bd4b92cb195bc53a302797333e768e70344222857ff1559"},
     {file = "discord-1.0.1.tar.gz", hash = "sha256:ff6653655e342e7721dfb3f10421345fd852c2a33f2cca912b1c39b3778a9429"},
 ]
-discord-py-slash-command = []
+discord-py-slash-command = [
+    {file = "discord-py-slash-command-1.1.0.tar.gz", hash = "sha256:b40a3c10ff4a83cb17b1443bd90761870d24cb71e7501f11c786ed179bef8d18"},
+    {file = "discord_py_slash_command-1.1.0-py3-none-any.whl", hash = "sha256:3dae6ff3e72da132b8307214daf575b68972407ca91572cca88276f25264554c"},
+]
 "discord.py" = [
     {file = "discord.py-1.7.1-py3-none-any.whl", hash = "sha256:399b80d576a63fa901300e80080568e1d9cd9c21260ca622fd7145c0009278fa"},
     {file = "discord.py-1.7.1.tar.gz", hash = "sha256:82bc5e6325ab7557db9c466f638c98e18be03c330f56ad9bf4c18bdcf19faf55"},

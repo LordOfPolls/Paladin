@@ -308,6 +308,18 @@ class BaseModeration(commands.Cog):
         emb.set_thumbnail(url=user.avatar_url)
         emb.description = ""
 
+        # get db data on user
+        user_data: typing.Optional[dict] = await self.bot.db.execute(
+            f"SELECT * FROM paladin.users WHERE guildID ='{ctx.guild_id}' and userID = '{user.id}'",
+            getOne=True,
+        )
+        if user_data:
+            if user_data.get("warnings") != 0:
+                warnings = user_data.get("warnings")
+                emb.description += f"{self.emoji['rules']} {warnings} warning{'s' if warnings > 1 else ''}\n"
+            if user_data.get("muted") == 1:
+                emb.description += f"{self.emoji['voiceLocked']} Muted\n"
+
         # names
         emb.add_field(name="ID", value=user.id, inline=False)
         emb.add_field(name="Username", value=f"{user.name} #{user.discriminator}", inline=False)

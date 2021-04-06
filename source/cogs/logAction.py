@@ -3,6 +3,7 @@ import json
 import logging
 
 from discord.ext import commands
+from discord_slash import cog_ext, SlashContext
 
 from source import utilities
 from source.shared import *
@@ -47,19 +48,16 @@ class LogAction(commands.Cog):
 
             reason = json.dumps(reason)
             reason = base64.b64encode(reason.encode()).decode("utf-8")
-            query = (
-                "INSERT INTO paladin.modActions (actionID, guildID, action, moderatorID, userID, roleID, reason, "
-                "messageID) VALUES ({actionID}, '{guild}', {action}, '{modID}', {userID}, {role}, '{reason}', "
-                "'{messageID}')".format(
-                    actionID=actionID,
-                    guild=guild.id,
-                    action=modAction,
-                    modID=moderator.id,
-                    userID=f"'{user.id}'" if user else "NULL",
-                    role=f"'{role.id}'" if role else "NULL",
-                    reason=await self.bot.db.escape(reason),
-                    messageID=message.id,
-                )
+            query = "INSERT INTO paladin.modActions (actionID, guildID, action, moderatorID, userID, roleID, reason, channelID, messageID) VALUES ({actionID}, '{guild}', {action}, '{modID}', {userID}, {role}, '{reason}', '{messageID}', '{channelID}')".format(
+                actionID=actionID,
+                guild=guild.id,
+                action=modAction,
+                modID=moderator.id,
+                userID=f"'{user.id}'" if user else "NULL",
+                role=f"'{role.id}'" if role else "NULL",
+                reason=await self.bot.db.escape(reason),
+                messageID=message.id,
+                channelID=message.channel.id,
             )
             log.info("writing to db")
             await self.bot.db.execute(query)
@@ -158,6 +156,52 @@ class LogAction(commands.Cog):
         return emb
 
     # endregion: formatters
+
+    @cog_ext.cog_slash(
+        name="reason",
+        options=[
+            manage_commands.create_option(
+                name="id",
+                description="The id of the action you want to attach a reason to",
+                option_type=int,
+                required=True,
+            ),
+            manage_commands.create_option(
+                name="reason", description="The reason for this action", option_type=str, required=True
+            ),
+        ],
+        description="Add a reason to an action",
+    )
+    async def reason_cmd(self, ctx: SlashContext, id, reason):
+        await ctx.defer(hidden=True)
+        action_data: dict = await self.bot.db.execute(
+            f"SELECT * FROM paladin.modActions WHERE actionID = {id} AND guildID = '{ctx.guild_id}'", getOne=True
+        )
+        if action_data is None:
+            return await ctx.send("No action exists with that ID")
+
+        chnl = ctx.guild.get_channel(int(action_data.get("channelID")))
+
+        # update value in db
+        db_reason = json.dumps(reason)
+        db_reason = base64.b64encode(db_reason.encode()).decode("utf-8")
+        await self.bot.db.execute(
+            f"UPDATE paladin.modActions SET reason = '{db_reason}' WHERE actionID = {id} AND guildID = '{ctx.guild_id}'"
+        )
+
+        # try to update message in discord
+        message: discord.Message = await self.bot.getMessage(channel=chnl, messageID=int(action_data.get("messageID")))
+
+        if message:
+            original_embed = message.embeds[0]
+            for i in range(len(original_embed.fields)):
+                field = original_embed.fields[i]
+                if field.name.startswith("Reason"):
+                    original_embed.remove_field(i)
+            original_embed.add_field(name="Reason", value=reason, inline=False)
+            original_embed.add_field(name="Action ID", value=str(id), inline=False)
+            await message.edit(embed=original_embed)
+        await ctx.send(f"Your reason has been stored for action #{id}")
 
 
 def setup(bot):

@@ -12,16 +12,9 @@ from discord_slash.utils import manage_commands
 
 from source import utilities, dataclass, messageObject
 
-from source.enums import *
+from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::BaseMod")
-
-reasonOption = manage_commands.create_option(
-    name="reason",
-    description="Specify a reason for this action",
-    option_type=str,
-    required=False,
-)
 
 
 class BaseModeration(commands.Cog):
@@ -33,19 +26,6 @@ class BaseModeration(commands.Cog):
         self.slash = bot.slash
 
         self.emoji = bot.emoji_list
-
-        async def dummy(**kwargs):
-            """Used in the event modlog isnt loaded"""
-            log.error("Failed to log action")
-
-        self.log_action = dummy
-
-    async def setup(self):
-        try:
-            cog = self.bot.get_cog("ModLog")
-            self.log_action = cog.log_mod_action
-        except:
-            self.log_action = self.log_action
 
     @cog_ext.cog_subcommand(
         base="messages",
@@ -79,9 +59,7 @@ class BaseModeration(commands.Cog):
         ctx: SlashContext,
         total: int,
         user: discord.User = None,
-        channel: typing.Union[
-            discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel
-        ] = None,
+        channel: discord.TextChannel = None,
         reason: str = None,
     ):
 
@@ -134,13 +112,13 @@ class BaseModeration(commands.Cog):
         except:
             await ctx.send(embed=emb)
 
-        asyncio.ensure_future(
-            self.log_action(
-                action=ModActions.purge,
+        await self.bot.paladinEvents.add_item(
+            Action(
+                actionType=ModActions.purge,
+                moderator=ctx.author,
                 guild=ctx.guild,
+                extra=channel,
                 reason=reason,
-                channel=channel,
-                users=[ctx.author],
             )
         )
 
@@ -188,13 +166,14 @@ class BaseModeration(commands.Cog):
                 f"Unable to add {role.name} to {user.name} #{user.discriminator}"
             )
 
-        asyncio.ensure_future(
-            self.log_action(
-                action=ModActions.roleGive,
+        await self.bot.paladinEvents.add_item(
+            Action(
+                actionType=ModActions.roleGive,
+                moderator=ctx.author,
                 guild=ctx.guild,
+                user=user,
+                extra=role,
                 reason=reason,
-                role=role,
-                users=[ctx.author, user],
             )
         )
 
@@ -247,13 +226,14 @@ class BaseModeration(commands.Cog):
                 f"Unable to remove {role.name} from {user.name} #{user.discriminator}"
             )
 
-        asyncio.ensure_future(
-            self.log_action(
-                action=ModActions.roleRem,
+        await self.bot.paladinEvents.add_item(
+            Action(
+                actionType=ModActions.roleRem,
+                moderator=ctx.author,
                 guild=ctx.guild,
+                user=user,
+                extra=role,
                 reason=reason,
-                role=role,
-                users=[ctx.author, user],
             )
         )
 
@@ -285,12 +265,13 @@ class BaseModeration(commands.Cog):
             return await ctx.send(
                 f"Failed to kick {user.name} #{user.discriminator}", hidden=True
             )
-        asyncio.ensure_future(
-            self.log_action(
-                action=ModActions.kick,
+        await self.bot.paladinEvents.add_item(
+            Action(
+                actionType=ModActions.kick,
+                moderator=ctx.author,
                 guild=ctx.guild,
+                user=user,
                 reason=reason,
-                users=[ctx.author, user],
             )
         )
 
@@ -322,12 +303,13 @@ class BaseModeration(commands.Cog):
             return await ctx.send(
                 f"Failed to ban {user.name} #{user.discriminator}", hidden=True
             )
-        asyncio.ensure_future(
-            self.log_action(
-                action=ModActions.ban,
+        await self.bot.paladinEvents.add_item(
+            Action(
+                actionType=ModActions.ban,
+                moderator=ctx.author,
                 guild=ctx.guild,
+                user=user,
                 reason=reason,
-                users=[ctx.author, user],
             )
         )
 

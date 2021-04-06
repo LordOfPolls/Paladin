@@ -6,11 +6,13 @@ import discord
 from discord.ext import commands
 from discord_slash import SlashCommand
 
-from . import databaseManager
+from source import databaseManager, events
 
 
 class Bot(commands.Bot):
-    """Expands on the default bot class, and helps with type-hinting """
+    """
+    Expands on the default bot class, and helps with type-hinting
+    """
 
     def __init__(self, cogList=list, *args, **kwargs):
         self.cogList = cogList
@@ -30,6 +32,8 @@ class Bot(commands.Bot):
 
         self.perms = 0
         """The perms the bot needs"""
+
+        self.paladinEvents: events.PaladinEvents = events.PaladinEvents()
 
         emoji = open("data/emoji.json", "r")
         self.emoji_list = json.load(emoji)

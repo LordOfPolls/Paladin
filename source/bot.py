@@ -27,9 +27,10 @@ bot = dataclass.Bot(
         "source.cogs.modmail",
         "source.cogs.modlog",
         "source.cogs.baseModeration",
+        "source.cogs.userWarn",
     ],
     help_command=None,
-    sync_commands=False,
+    sync_commands=True,
 )
 slash = bot.slash
 
@@ -69,6 +70,9 @@ async def startupTasks():
         _c = bot.get_cog(cog)
         if hasattr(_c, "setup"):
             await _c.setup()
+
+    bot.paladinEvents.process = True
+    asyncio.ensure_future(bot.paladinEvents.event_loop())
 
 
 @bot.event

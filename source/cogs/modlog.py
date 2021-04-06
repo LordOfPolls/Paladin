@@ -14,7 +14,7 @@ from discord_slash.utils import manage_commands
 
 from source import utilities, dataclass, messageObject
 
-from source.enums import *
+from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::Log")
 
@@ -28,6 +28,8 @@ class ModLog(commands.Cog):
         self.slash = bot.slash
 
         self.emoji = bot.emoji_list
+
+        self.bot.paladinEvents.subscribe_to_event(self.log_mod_action, "modAction")
 
     async def _send_with_webhook(
         self, channel: discord.TextChannel, embed: discord.Embed
@@ -107,22 +109,17 @@ class ModLog(commands.Cog):
         self.bot.add_listener(self.on_member_unban, "on_member_unban")
         self.bot.add_listener(self.on_purge, "on_raw_bulk_message_delete")
 
-    async def log_mod_action(
-        self, action: ModActions, guild: discord.Guild, reason: str = None, **kwargs
-    ):
+    async def log_mod_action(self, action: Action):
         """Logs a moderation action"""
         channel: discord.TextChannel = self.bot.get_channel(743377002647519274)
         emb = discord.Embed(colour=discord.Colour.blurple())
-        users: typing.List[typing.Union[discord.Member, discord.User]] = kwargs.get(
-            "users"
-        )
 
-        moderator = users[0]
-        user = users[1] if len(users) == 2 else None
-        role = kwargs.get("role")
-        token = await self._get_new_action_id(guild)
+        token = await self._get_new_action_id(action.guild)
 
-        if action == ModActions.kick or action == ModActions.ban:
+        if (
+            action.action_type == ModActions.kick
+            or action.action_type == ModActions.ban
+        ):
             emb.title = (
                 f"{self.emoji['banned']} User Banned"
                 if action == ModActions.ban
@@ -130,43 +127,46 @@ class ModLog(commands.Cog):
             )
             emb.add_field(
                 name="User",
-                value=f"{user.name} #{user.discriminator} ({user.mention})",
+                value=f"{action.user.name} #{action.user.discriminator} ({action.user.mention})",
                 inline=False,
             )
 
-        elif action == ModActions.purge:
-            actChannel: discord.TextChannel = kwargs.get("channel")
+        elif action.action_type == ModActions.purge:
+            actChannel: discord.TextChannel = action.extra
             emb.title = f"{self.emoji['deleted']}Channel Purged"
             emb.add_field(name="Channel", value=actChannel.mention, inline=False)
 
-        elif action == ModActions.warn:
+        elif action.action_type == ModActions.warn:
             emb.title = f"{self.emoji['rules']}User Warned"
-            warnings = kwargs.get("warnNum")
+            warnings = action.extra
             emb.add_field(
                 name="User",
-                value=f"{user.name} #{user.discriminator} ({user.mention})",
+                value=f"{action.user.name} #{action.user.discriminator} ({action.user.mention})",
                 inline=False,
             )
             emb.add_field(name="Warnings", value=warnings, inline=False)
 
-        elif action == ModActions.roleGive or action == ModActions.roleRem:
+        elif (
+            action.action_type == ModActions.roleGive
+            or action.action_type == ModActions.roleRem
+        ):
             emb.title = f"{self.emoji['members']}Role {'Given' if action == ModActions.roleGive else 'Removed'}"
             emb.add_field(
                 name="User",
-                value=f"{user.name} #{user.discriminator} ({user.mention})",
+                value=f"{action.user.name} #{action.user.discriminator} ({action.user.mention})",
                 inline=False,
             )
-            emb.add_field(name="Role", value=role.mention, inline=False)
+            emb.add_field(name="Role", value=action.extra.name, inline=False)
 
         emb.add_field(
             name="Moderator",
-            value=f"{moderator.name} #{moderator.discriminator} ({moderator.mention})",
+            value=f"{action.moderator.name} #{action.moderator.discriminator} ({action.moderator.mention})",
             inline=False,
         )
 
         reason = (
-            reason
-            if reason is not None
+            action.reason
+            if action.reason is not None
             else f"**Moderator:** Please use `/reason {token}`"
         )
 
@@ -179,17 +179,15 @@ class ModLog(commands.Cog):
         msg = await channel.send(
             embed=emb, allowed_mentions=discord.AllowedMentions.none()
         )
-        await asyncio.create_task(
-            self._writeActionToDb(
-                guild=guild,
-                actionID=token,
-                modAction=action,
-                moderator=moderator,
-                reason=reason,
-                message=msg,
-                user=user,
-                role=role,
-            )
+        await self._writeActionToDb(
+            guild=action.guild,
+            actionID=token,
+            modAction=action.action_type,
+            moderator=action.moderator,
+            reason=reason,
+            message=msg,
+            user=action.user,
+            role=action.extra if isinstance(action.extra, discord.Role) else None,
         )
 
     async def eventHandler(self, event, **kwargs):

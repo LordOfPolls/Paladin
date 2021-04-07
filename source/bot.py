@@ -29,6 +29,7 @@ bot = dataclass.Bot(
         "source.cogs.logAction",
         "source.cogs.baseModeration",
         "source.cogs.userWarn",
+        "source.cogs.userInfo",
     ],
     help_command=None,
     sync_commands=False,

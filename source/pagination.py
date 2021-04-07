@@ -4,12 +4,14 @@ https://github.com/python-discord/bot/blob/master/bot/pagination.py
 
 import asyncio
 import logging
+import typing
 import typing as t
 from contextlib import suppress
 
 import discord
 from discord.abc import User
 from discord.ext.commands import Context, Paginator
+from discord_slash import SlashContext
 
 FIRST_EMOJI = "\u23EE"  # [:track_previous:]
 LEFT_EMOJI = "\u2B05"  # [:arrow_left:]
@@ -45,12 +47,13 @@ class LinePaginator(Paginator):
     """
 
     def __init__(
-            self,
-            prefix: str = '```',
-            suffix: str = '```',
-            max_size: int = 2000,
-            scale_to_size: int = 2000,
-            max_lines: t.Optional[int] = None
+        self,
+        prefix: str = "```",
+        suffix: str = "```",
+        max_size: int = 2000,
+        scale_to_size: int = 2000,
+        max_lines: t.Optional[int] = None,
+        linesep="\n",
     ) -> None:
         """
         This function overrides the Paginator.__init__ from inside discord.ext.commands.
@@ -59,6 +62,8 @@ class LinePaginator(Paginator):
         """
         self.prefix = prefix
         self.suffix = suffix
+
+        self.linesep = linesep
 
         # Embeds that exceed 2048 characters will result in an HTTPException
         # (Discord API limit), so we've set a limit of 2000
@@ -80,7 +85,7 @@ class LinePaginator(Paginator):
         self._count = len(prefix) + 1  # prefix + newline
         self._pages = []
 
-    def add_line(self, line: str = '', *, empty: bool = False) -> None:
+    def add_line(self, line: str = "", *, empty: bool = False) -> None:
         """
         Adds a line to the current page.
 
@@ -105,7 +110,7 @@ class LinePaginator(Paginator):
                 line, remaining_words = self._split_remaining_words(line, max_chars)
                 if len(line) > self.scale_to_size:
                     log.debug("Could not continue to next page, truncating line.")
-                    line = line[:self.scale_to_size]
+                    line = line[: self.scale_to_size]
 
         # Check if we should start a new page or continue the line on the current one
         if self.max_lines is not None and self._linecount >= self.max_lines:
@@ -121,7 +126,7 @@ class LinePaginator(Paginator):
         self._current_page.append(line)
 
         if empty:
-            self._current_page.append('')
+            self._current_page.append("")
             self._count += 1
 
         # Start a new page if there were any overflow words
@@ -180,26 +185,26 @@ class LinePaginator(Paginator):
 
         return (
             " ".join(reduced_words) + "..." if remaining_words else "",
-            continuation_header + " ".join(remaining_words) if remaining_words else None
+            continuation_header + " ".join(remaining_words) if remaining_words else None,
         )
 
     @classmethod
     async def paginate(
-            cls,
-            lines: t.List[str],
-            ctx: Context,
-            embed: discord.Embed,
-            prefix: str = "",
-            suffix: str = "",
-            max_lines: t.Optional[int] = None,
-            max_size: int = 500,
-            scale_to_size: int = 2000,
-            empty: bool = True,
-            restrict_to_user: User = None,
-            timeout: int = 300,
-            footer_text: str = None,
-            url: str = None,
-            exception_on_empty_embed: bool = False,
+        cls,
+        lines: t.List[str],
+        ctx: typing.Union[Context, SlashContext],
+        embed: discord.Embed,
+        prefix: str = "",
+        suffix: str = "",
+        max_lines: t.Optional[int] = None,
+        max_size: int = 500,
+        scale_to_size: int = 2000,
+        empty: bool = True,
+        restrict_to_user: User = None,
+        timeout: int = 300,
+        footer_text: str = None,
+        url: str = None,
+        exception_on_empty_embed: bool = False,
     ) -> t.Optional[discord.Message]:
         """
         Use a paginator and set of reactions to provide pagination over a set of lines.
@@ -224,26 +229,30 @@ class LinePaginator(Paginator):
             """Make sure that this reaction is what we want to operate on."""
             no_restrictions = (
                 # The reaction was by a whitelisted user
-                    user_.id == restrict_to_user.id
+                user_.id
+                == restrict_to_user.id
                 # The reaction was by a moderator
             )
 
             return (
                 # Conditions for a successful pagination:
-                all((
-                    # Reaction is on this message
-                    reaction_.message.id == message.id,
-                    # Reaction is one of the pagination emotes
-                    str(reaction_.emoji) in PAGINATION_EMOJI,
-                    # Reaction was not made by the Bot
-                    user_.id != ctx.bot.user.id,
-                    # There were no restrictions
-                    no_restrictions
-                ))
+                all(
+                    (
+                        # Reaction is on this message
+                        reaction_.message.id == message.id,
+                        # Reaction is one of the pagination emotes
+                        str(reaction_.emoji) in PAGINATION_EMOJI,
+                        # Reaction was not made by the Bot
+                        user_.id != ctx.bot.user.id,
+                        # There were no restrictions
+                        no_restrictions,
+                    )
+                )
             )
 
-        paginator = cls(prefix=prefix, suffix=suffix, max_size=max_size, max_lines=max_lines,
-                        scale_to_size=scale_to_size)
+        paginator = cls(
+            prefix=prefix, suffix=suffix, max_size=max_size, max_lines=max_lines, scale_to_size=scale_to_size
+        )
         current_page = 0
 
         if not restrict_to_user:

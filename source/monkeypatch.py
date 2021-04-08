@@ -9,24 +9,29 @@ from discord.ext.commands import CooldownMapping, CommandOnCooldown
 from discord.utils import snowflake_time
 from source import utilities
 
-log = utilities.getLog("MonkeyPatcher")
 
 # i am more than aware monkey patching is not a good idea, but i really dont care
 # the only downside is i have to maintain this and it might break when the lib updates
 # hate me silently or piss off
 
-context_original_init = copy.deepcopy(discord_slash.context.SlashContext.__init__)
-commandObj_original_init = copy.deepcopy(discord_slash.model.CommandObject.__init__)
+
+log = utilities.getLog("MonkeyPatcher")
+
+# create copies so i can call the original inits
+context_original_init = copy.copy(discord_slash.context.SlashContext.__init__)
+commandObj_original_init = copy.copy(discord_slash.model.CommandObject.__init__)
 
 
 def monkeypatched_SlashCommand(*args, **kwargs) -> discord_slash.SlashCommand:
     """The discord_slash SlashCommands lib with some features monkey patched in
 
-    Adds error decorators, custom invoker, and cooldowns"""
+    Adds error decorators, custom invoker, cooldowns and fixes Type Error bug"""
     try:
         # patch commandObjects
         log.debug("Patching model.CommandObject...")
+        # Adds error decorator support
         discord_slash.model.CommandObject.error = error
+        # Cooldown / max concurrency support
         discord_slash.model.CommandObject.__init__ = command_init
         discord_slash.model.CommandObject._prepare_cooldowns = _prepare_cooldowns
         discord_slash.model.CommandObject._concurrency_checks = _concurrency_checks
@@ -35,27 +40,29 @@ def monkeypatched_SlashCommand(*args, **kwargs) -> discord_slash.SlashCommand:
         discord_slash.model.CommandObject.reset_cooldown = reset_cooldown
         discord_slash.model.CommandObject.get_cooldown_retry_after = get_cooldown_retry_after
 
-        # current implementation of the lib has overrides for invoke, for some reason
-        # this replaces them all with the same invoke func
         log.debug("Patching model.CogCommandObject...")
+        # Cooldown / max concurrency support
         discord_slash.model.CogCommandObject.invoke = invoke
 
         log.debug("Patching model.CogSubcommandObject...")
+        # Cooldown / max concurrency support
         discord_slash.model.CogSubcommandObject.invoke = invoke
 
         # patch context
         log.debug("Patching context.SlashContext...")
+        # Cooldown / max concurrency support
         discord_slash.context.SlashContext.__init__ = context_init
 
         # replace invoke_command
         log.debug("Patching invoke_command...")
+        # Error decorator support and bug fix
         discord_slash.SlashCommand.invoke_command = slsh_invoke_command
 
         log.info("Successfully patched discord_slash.SlashCommand")
         return discord_slash.SlashCommand(*args, **kwargs)
     except Exception as e:
         log.error(
-            "Failed to discord_slash.SlashCommand:\n{}".format(
+            "Failed to patch discord_slash.SlashCommand:\n{}".format(
                 "".join(traceback.format_exception(type(e), e, e.__traceback__))
             )
         )
@@ -170,6 +177,9 @@ async def invoke(self, *args, **kwargs):
         raise discord_slash.model.error.CheckFailure
 
     await self._concurrency_checks(args[0])
+
+    # to preventing needing different functions per object,
+    # this function simply handles cogs
     if hasattr(self, "cog"):
         return await self.func(self.cog, *args, **kwargs)
     return await self.func(*args, **kwargs)

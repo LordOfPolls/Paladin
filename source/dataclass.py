@@ -1,13 +1,16 @@
 import asyncio
+import inspect
 import json
 import typing
 from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
-from discord_slash import SlashCommand
+import discord_slash
 
-from source import databaseManager, events
+from discord_slash import SlashContext
+
+from source import databaseManager, events, monkeypatch
 
 
 class Bot(commands.Bot):
@@ -43,11 +46,18 @@ class Bot(commands.Bot):
 
         super().__init__(*args, **kwargs)
 
-        self.slash = SlashCommand(
-            self,
-            sync_commands=False if "sync_commands" not in kwargs else kwargs["sync_commands"],
+        # monkey patch in some functionality to slashCommands while setting it up
+        self.slash: discord_slash.SlashCommand = monkeypatch.monkeypatched_SlashCommand(
+            self, sync_commands=False if "sync_commands" not in kwargs else kwargs["sync_commands"]
         )
         """The slash command system"""
+
+    async def is_in_guild(self, ctx: SlashContext):
+        """Prevents the bot being used in dm"""
+        if ctx.guild is None:
+            await ctx.send("Sorry this bot can only be used in a server")
+            return False
+        return True
 
     async def close(self):
         """Close the connection to discord"""

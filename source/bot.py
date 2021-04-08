@@ -35,6 +35,7 @@ bot = dataclass.Bot(
     ],
     help_command=None,
     sync_commands=False,
+    activity=discord.Game("Startup"),
 )
 slash = bot.slash
 
@@ -59,7 +60,6 @@ async def startupTasks():
     log.debug("Running startup tasks...")
     bot.appInfo = await bot.application_info()
     bot.startTime = datetime.now()
-    await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game("Startup"))
 
     log.info("Establishing connection to database...")
     try:
@@ -122,51 +122,12 @@ async def on_command_error(ctx, ex):
 
 @bot.event
 async def on_slash_command_error(ctx, ex):
-    def logError():
-        log.error(
-            "Ignoring exception in command {}: {}".format(
-                ctx.command,
-                "".join(traceback.format_exception(type(ex), ex, ex.__traceback__)),
-            )
+    log.error(
+        "Ignoring exception in command {}: {}".format(
+            ctx.command,
+            "".join(traceback.format_exception(type(ex), ex, ex.__traceback__)),
         )
-
-    if isinstance(ex, commands.errors.CommandOnCooldown):
-        lines = [
-            "Whoa",
-            "Damn you're eager",
-            "Too... many... tags",
-            "Gotta go fast huh?",
-            "Speed is key",
-            "Where's that damn forth chaos emerald",
-            "You know what they say, the more the merrier",
-            "Oh no",
-            "Spam time?" "",
-        ]
-        remaining = re.search(r"\d+\.", str(ex))
-        await ctx.send(
-            f"`{choice(lines)}`\n"
-            f"You're making tags too fast. Wait {remaining.group().replace(',', 's')} before using that again "
-        )
-    elif isinstance(ex, discord.errors.Forbidden):
-        log.error(f"Missing permissions in {ctx.guild.name}")
-        await ctx.send(
-            f"**Error:** I am missing permissions.\n"
-            f"Please make sure i can access this channel, manage messages, embed links, and add reactions."
-        )
-    elif isinstance(ex, discord_slash.error.CheckFailure):
-        log.debug(f"Ignoring command: check failure")
-    elif isinstance(ex, discord.NotFound):
-        logError()
-        await ctx.send(
-            "Discord did not send the interaction correctly, this usually resolves after a few minutes, "
-            "if it doesnt, please use `/server` and report it"
-        )
-    else:
-        logError()
-        await ctx.send(
-            "An un-handled error has occurred, and has been logged, please try again later.\n"
-            "If this continues please use `/server` and report it in my server"
-        )
+    )
 
 
 async def guildPurge(guildID: int):
@@ -186,6 +147,7 @@ async def on_guild_join(guild: discord.Guild):
     while not bot.is_ready():
         await asyncio.sleep(5)
     log.info(f"Joined Guild {guild.id}. {len([m for m in guild.members if not m.bot])} users")
+    # todo: pregen data on db
 
 
 @bot.event
@@ -195,19 +157,4 @@ async def on_guild_remove(guild):
     if guild.id == 110373943822540800:
         return
     log.info(f"Left Guild {guild.id} || Purging data...")
-
-
-@bot.event
-async def on_member_join(member):
-    if member.guild.id == 110373943822540800:
-        return
-    if not member.bot:
-        log.spam("Member added event")
-
-
-@bot.event
-async def on_member_remove(member):
-    if member.guild.id == 110373943822540800:
-        return
-    if not member.bot:
-        log.spam("Member removed event")
+    # todo: implement purging

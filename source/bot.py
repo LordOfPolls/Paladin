@@ -1,14 +1,11 @@
 import asyncio
 import logging
-import re
 import traceback
 from datetime import datetime
-from random import choice
 
 import discord
 import discord_slash
-from discord.ext import commands
-from discord_slash import SlashContext, error
+from discord_slash import SlashContext
 from discord_slash.utils import manage_commands
 
 from . import utilities, dataclass
@@ -82,19 +79,30 @@ async def on_ready():
     """Called when the bot is ready"""
     if not bot.startTime:
         await startupTasks()
-    log.info("INFO".center(40, "-"))
-    log.info(f"Logged in as       : {bot.user.name} #{bot.user.discriminator}")
-    log.info(f"User ID            : {bot.user.id}")
-    log.info(f"Start Time         : {bot.startTime.ctime()}")
-    log.info(
-        f"DB Connection Type : "
-        f"{'Tunneled' if bot.db.tunnel and bot.db.dbPool else 'Direct' if bot.db.dbPool else 'Not Connected'}"
-    )
-    log.info(f"Server Count       : {len(bot.guilds)}")
-    log.info(f"Cog Count          : {len(bot.cogs)}")
-    log.info(f"Command Count      : {len(slash.commands)}")
-    log.info(f"Discord.py Version : {discord.__version__}")
-    log.info("END-INFO".center(40, "-"))
+
+    update = await bot.determine_update()
+
+    output = [
+        "",
+        f"Logged in as         : {bot.user.name} #{bot.user.discriminator}",
+        f"User ID              : {bot.user.id}",
+        f"Start Time           : {bot.startTime.ctime()}",
+        f"DB Connection Type   : "
+        f"{'Tunneled' if bot.db.tunnel and bot.db.dbPool else 'Direct' if bot.db.dbPool else 'Not Connected'}",
+        f"Server Count         : {len(bot.guilds)}",
+        f"Cog Count            : {len(bot.cogs)}",
+        f"Command Count        : {len(slash.commands)}",
+        f"Update Status        : {update}",
+        f"Paladin Version      : {bot.version}",
+        f"Discord.py Version   : {discord.__version__}",
+        f"DiscordSlash Version : {discord_slash.__version__}",
+    ]
+
+    length = len(max(output, key=len))
+    output.insert(1, "INFO".center(length, "-"))
+    output.append("END-INFO".center(length, "-"))
+    log.info("\n".join(output))
+
     await bot.change_presence(
         status=discord.Status.online,
         activity=discord.Activity(type=discord.ActivityType.watching, name="over your server"),

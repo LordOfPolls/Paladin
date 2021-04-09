@@ -1,7 +1,9 @@
 import asyncio
 import inspect
 import json
+import subprocess
 import typing
+import toml
 from datetime import datetime, timedelta
 
 import discord
@@ -43,6 +45,14 @@ class Bot(commands.Bot):
         self.emoji_list = json.load(emoji)
         emoji.close()
         """A dict of emoji the bot uses"""
+
+        try:
+            # grab version from poetry/version in pyproject.toml
+            pyproject = open("./pyproject.toml", "r")
+            self.version = toml.load(pyproject)["tool"]["poetry"]["version"]
+            pyproject.close()
+        except FileNotFoundError:
+            self.version = "Unknown"
 
         super().__init__(*args, **kwargs)
 
@@ -151,3 +161,16 @@ class Bot(commands.Bot):
         if hours >= 1:
             return f"{hoursFmt} and {minutesFmt}"
         return f"{minutesFmt} and {secondsFmt}"
+
+    @staticmethod
+    def _determine_update():
+        """Checks git if a newer version is available"""
+        subprocess.run(["git", "fetch"])
+        data = subprocess.check_output(["git", "status"])
+        if "Your branch is behind" in data.decode():
+            return "Update Available"
+        return "Up to date"
+
+    async def determine_update(self):
+        """Checks git if a newer version is available"""
+        return await asyncio.to_thread(self._determine_update)

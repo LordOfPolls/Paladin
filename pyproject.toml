@@ -7,7 +7,7 @@ authors = ["LordOfPolls <ddavidallen13@gmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.9"
 discord = "^1.0.1"
-discord-py-slash-command = "^1.1"
+discord-py-slash-command = {git = "https://github.com/eunwoo1104/discord-py-slash-command.git"}
 colorlog = "^4.8.0"
 aiomysql = "^0.0.21"
 sshtunnel = "^0.4.0"

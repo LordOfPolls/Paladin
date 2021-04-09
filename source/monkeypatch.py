@@ -81,9 +81,6 @@ def command_init(self, name, cmd):
     commandObj_original_init(self, name, cmd)
 
     # add in cooldowns and concurrency attribs
-    if hasattr(self.func, "__commands_checks__"):
-        self.__commands_checks__ = self.func.__commands_checks__
-
     cooldown = None
     if hasattr(self.func, "__commands_cooldown__"):
         cooldown = self.func.__commands_cooldown__

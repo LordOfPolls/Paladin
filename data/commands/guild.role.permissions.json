@@ -1,0 +1,18 @@
+{
+  "decorator": {
+    "name": "guild",
+    "description": "View all permissions a role has in your guild",
+    "options": [
+      {
+        "name": "role",
+        "description": "The role in question",
+        "type": 8,
+        "required": true,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "permissions",
+    "subcommand_group": "role"
+  }
+}

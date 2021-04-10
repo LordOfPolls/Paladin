@@ -1,0 +1,25 @@
+{
+  "decorator": {
+    "name": "channel",
+    "description": "Get override permissions for a role in this channel",
+    "options": [
+      {
+        "name": "role",
+        "description": "The role in question",
+        "type": 8,
+        "required": true,
+        "choices": []
+      },
+      {
+        "name": "channel",
+        "description": "The channel in question",
+        "type": 7,
+        "required": false,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "permissions",
+    "subcommand_group": "role"
+  }
+}

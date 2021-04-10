@@ -3,7 +3,7 @@ import logging
 from discord.ext import commands
 from discord_slash import SlashContext, cog_ext
 
-from source import utilities, dataclass
+from source import utilities, dataclass, jsonManager
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::warn")
@@ -35,21 +35,7 @@ class UserWarnings(commands.Cog):
             }
         return data
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        subcommand_group="warn",
-        name="add",
-        description="Warn a user - 3 warnings = Kick",
-        options=[
-            manage_commands.create_option(
-                name="user",
-                option_type=6,
-                description="The user in question",
-                required=True,
-            ),
-            reasonOption,
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("add.warn.user"))
     async def warnCMD(
         self,
         ctx: SlashContext,
@@ -122,21 +108,7 @@ class UserWarnings(commands.Cog):
             f"UPDATE paladin.users SET warnings={warning_num} WHERE guildID ='{ctx.guild_id}' AND userID ='{user.id}'"
         )
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        subcommand_group="warn",
-        name="clear",
-        description="Clears all warnings from a user",
-        options=[
-            manage_commands.create_option(
-                name="user",
-                option_type=6,
-                description="The user in question",
-                required=True,
-            ),
-            reasonOption,
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("clear.warn.user"))
     async def warnClearCMD(
         self,
         ctx: SlashContext,

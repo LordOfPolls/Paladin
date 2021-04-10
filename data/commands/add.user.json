@@ -1,0 +1,32 @@
+{
+  "decorator": {
+    "name": "add",
+    "description": "Give a user a role",
+    "options": [
+      {
+        "name": "role",
+        "description": "The role to add",
+        "type": 8,
+        "required": true,
+        "choices": []
+      },
+      {
+        "name": "user",
+        "description": "The user in question",
+        "type": 6,
+        "required": false,
+        "choices": []
+      },
+      {
+        "name": "reason",
+        "description": "Specify a reason for this action",
+        "type": 3,
+        "required": false,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "user",
+    "subcommand_group": "role"
+  }
+}

@@ -10,7 +10,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands import BucketType
 from discord_slash import cog_ext, SlashContext
 
-from source import utilities, dataclass
+from source import utilities, dataclass, jsonManager
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::AutoDel")
@@ -89,20 +89,7 @@ class AutoDelete(commands.Cog):
         except Exception as e:
             log.error("".join(traceback.format_exception(type(e), e, e.__traceback__)))
 
-    @cog_ext.cog_subcommand(
-        base="autodelete",
-        name="disable",
-        description="Disable auto delete",
-        options=[
-            manage_commands.create_option(
-                name="channel",
-                description="The channel you want to auto-delete in (default is here)",
-                option_type=7,
-                required=False,
-            ),
-        ],
-        guild_ids=[701347683591389185],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("disable.autodelete"))
     @max_concurrency
     async def disable_cmd(self, ctx: SlashContext, channel: discord.TextChannel = None):
         await ctx.defer(hidden=True)
@@ -131,22 +118,7 @@ class AutoDelete(commands.Cog):
         await self.cache_guild_data()
         await ctx.send(f"Got it, auto-deletion has been disabled in {channel.mention}", hidden=True)
 
-    @cog_ext.cog_subcommand(
-        base="autodelete",
-        name="setup",
-        options=[
-            manage_commands.create_option(
-                name="time", description="How many minutes before a message is deleted", option_type=int, required=True
-            ),
-            manage_commands.create_option(
-                name="channel",
-                description="The channel you want to auto-delete in (default is here)",
-                option_type=7,
-                required=False,
-            ),
-        ],
-        guild_ids=[701347683591389185],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("setup.autodelete"))
     @max_concurrency
     async def setup_cmd(self, ctx: SlashContext, time: int, channel: discord.TextChannel = None):
         await ctx.defer(hidden=True)

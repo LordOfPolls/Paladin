@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils import manage_commands
 
-from source import utilities
+from source import utilities, jsonManager
 
 log: logging.Logger = utilities.getLog("Cog::uInfo")
 
@@ -22,19 +22,7 @@ class UserInfo(commands.Cog):
 
     # todo: add additional user info commands
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        name="info",
-        description="Get information about a user",
-        options=[
-            manage_commands.create_option(
-                name="User",
-                description="The user in question",
-                option_type=6,
-                required=True,
-            )
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("info.user"))
     async def userInfo(self, ctx: SlashContext, user: typing.Union[discord.Member, discord.User]):
         emb = discord.Embed(colour=discord.Colour.blurple())
         emb.set_thumbnail(url=user.avatar_url)

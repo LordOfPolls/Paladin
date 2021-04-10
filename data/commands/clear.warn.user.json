@@ -1,0 +1,25 @@
+{
+  "decorator": {
+    "name": "clear",
+    "description": "Clears all warnings from a user",
+    "options": [
+      {
+        "name": "user",
+        "description": "The user in question",
+        "type": 6,
+        "required": true,
+        "choices": []
+      },
+      {
+        "name": "reason",
+        "description": "Specify a reason for this action",
+        "type": 3,
+        "required": false,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "user",
+    "subcommand_group": "warn"
+  }
+}

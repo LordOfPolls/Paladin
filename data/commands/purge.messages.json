@@ -1,0 +1,38 @@
+{
+  "decorator": {
+    "name": "purge",
+    "description": "Purge messages from this channel",
+    "options": [
+      {
+        "name": "total",
+        "description": "How many messages should be purged",
+        "type": 4,
+        "required": true,
+        "choices": []
+      },
+      {
+        "name": "user",
+        "description": "Purge only from a specific user",
+        "type": 6,
+        "required": false,
+        "choices": []
+      },
+      {
+        "name": "channel",
+        "description": "Specify a channel to purge",
+        "type": 7,
+        "required": false,
+        "choices": []
+      },
+      {
+        "name": "reason",
+        "description": "Specify a reason for this action",
+        "type": 3,
+        "required": false,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "messages"
+  }
+}

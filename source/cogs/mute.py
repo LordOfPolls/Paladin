@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.ext.commands import BucketType
 from discord_slash import cog_ext, SlashContext
 
-from source import utilities, dataclass
+from source import utilities, dataclass, jsonManager
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::Mute")
@@ -178,14 +178,7 @@ class Mute(commands.Cog):
 
     # region: commands
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        subcommand_group="mute",
-        name="setrole",
-        options=[
-            manage_commands.create_option(name="role", description="Your mute role", option_type=8, required=True)
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("setrole.mute.user"))
     @commands.max_concurrency(1, BucketType.guild, wait=False)
     async def set_mute_role(self, ctx: SlashContext, role: discord.Role):
         await ctx.defer()
@@ -202,30 +195,7 @@ class Mute(commands.Cog):
             f"Your server's mute role has been set to {role.mention}", allowed_mentions=discord.AllowedMentions.none()
         )
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        subcommand_group="mute",
-        name="add",
-        description="Mute the specified user",
-        options=[
-            manage_commands.create_option(name="user", description="The user to mute", option_type=6, required=True),
-            manage_commands.create_option(
-                name="time", description="How long to mute the user for", option_type=int, required=True
-            ),
-            manage_commands.create_option(
-                name="unit",
-                description="The unit of time",
-                option_type=int,
-                required=True,
-                choices=[
-                    {"value": 1, "name": "minutes"},
-                    {"value": 2, "name": "hours"},
-                    {"value": 3, "name": "days"},
-                ],
-            ),
-            reasonOption,
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("add.mute.user"))
     async def mute(self, ctx: SlashContext, user: discord.Member, time: int, unit: int, reason: str = None):
         # scale up time value to match unit (ie minutes/hours/days
         await ctx.defer(hidden=True)
@@ -261,16 +231,7 @@ class Mute(commands.Cog):
         )
         await self.write_user_to_db(user, muted=True, mute_time=mute_time)
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        subcommand_group="mute",
-        name="clear",
-        description="Mute the specified user",
-        options=[
-            manage_commands.create_option(name="user", description="The user to unmute", option_type=6, required=True),
-            reasonOption,
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("clear.mute.user"))
     async def unmute(self, ctx: SlashContext, user: discord.Member, reason: str = None):
         # search database for muteRole id
         role = await self.get_mute_role(ctx.guild)

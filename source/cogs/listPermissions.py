@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils import manage_commands
 
-from source import utilities, pagination
+from source import utilities, pagination, jsonManager
 
 log: logging.Logger = utilities.getLog("Cog::lsPerms")
 
@@ -22,15 +22,7 @@ class ListPermissions(commands.Cog):
 
         self.paginator = pagination.LinePaginator(prefix="", suffix="")
 
-    @cog_ext.cog_subcommand(
-        base="permissions",
-        subcommand_group="role",
-        name="guild",
-        options=[
-            manage_commands.create_option(name="role", description="The role in question", option_type=8, required=True)
-        ],
-        guild_ids=[701347683591389185],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("guild.role.permissions"))
     async def role_perms_guild(self, ctx: SlashContext, role: discord.Role):
         data = []
         for perm, value in role.permissions:
@@ -42,20 +34,7 @@ class ListPermissions(commands.Cog):
             max_lines=10,
         )
 
-    @cog_ext.cog_subcommand(
-        base="permissions",
-        subcommand_group="role",
-        name="channel",
-        options=[
-            manage_commands.create_option(
-                name="role", description="The role in question", option_type=8, required=True
-            ),
-            manage_commands.create_option(
-                name="channel", description="The channel in question", option_type=7, required=False
-            ),
-        ],
-        guild_ids=[701347683591389185],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("channel.role.permissions"))
     async def role_perms_channel(
         self,
         ctx: SlashContext,
@@ -77,15 +56,7 @@ class ListPermissions(commands.Cog):
             max_lines=10,
         )
 
-    @cog_ext.cog_subcommand(
-        base="permissions",
-        subcommand_group="user",
-        name="guild",
-        options=[
-            manage_commands.create_option(name="user", description="The user in question", option_type=6, required=True)
-        ],
-        guild_ids=[701347683591389185],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("guild.user.permissions"))
     async def user_perms_guild(self, ctx: SlashContext, user: discord.Member):
         data = []
         for perm, value in user.guild_permissions:
@@ -97,20 +68,7 @@ class ListPermissions(commands.Cog):
             max_lines=10,
         )
 
-    @cog_ext.cog_subcommand(
-        base="permissions",
-        subcommand_group="user",
-        name="channel",
-        options=[
-            manage_commands.create_option(
-                name="user", description="The user in question", option_type=6, required=True
-            ),
-            manage_commands.create_option(
-                name="channel", description="The channel in question", option_type=7, required=False
-            ),
-        ],
-        guild_ids=[701347683591389185],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("channel.user.permissions"))
     async def user_perms_channel(
         self,
         ctx: SlashContext,

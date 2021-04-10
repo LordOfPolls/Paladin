@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from discord.ext import commands
 from discord_slash import SlashContext, cog_ext
 
-from source import utilities, dataclass
+from source import utilities, dataclass, jsonManager
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::BaseMod")
@@ -20,33 +20,7 @@ class BaseModeration(commands.Cog):
 
         self.emoji = bot.emoji_list
 
-    @cog_ext.cog_subcommand(
-        base="messages",
-        name="purge",
-        description="Purge messages from this channel",
-        options=[
-            manage_commands.create_option(
-                name="total",
-                description="How many messages should be purged",
-                option_type=int,
-                required=True,
-            ),
-            manage_commands.create_option(
-                name="user",
-                description="Purge only from a specific user",
-                option_type=6,
-                required=False,
-            ),
-            manage_commands.create_option(
-                name="channel",
-                description="Specify a channel to purge",
-                option_type=7,
-                required=False,
-            ),
-            reasonOption,
-        ],
-        guild_ids=[701347683591389185],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("purge.messages"))
     async def purge(
         self,
         ctx: SlashContext,
@@ -115,22 +89,7 @@ class BaseModeration(commands.Cog):
             )
         )
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        subcommand_group="role",
-        name="add",
-        description="Give a user a role",
-        options=[
-            manage_commands.create_option(name="role", description="The role to add", option_type=8, required=True),
-            manage_commands.create_option(
-                name="user",
-                option_type=6,
-                description="The user in question",
-                required=False,
-            ),
-            reasonOption,
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("add.user"))
     async def giveRole(
         self,
         ctx: SlashContext,
@@ -164,27 +123,7 @@ class BaseModeration(commands.Cog):
             )
         )
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        subcommand_group="role",
-        name="remove",
-        description="Give a user a role",
-        options=[
-            manage_commands.create_option(
-                name="role",
-                description="The role to remove",
-                option_type=8,
-                required=True,
-            ),
-            manage_commands.create_option(
-                name="user",
-                option_type=6,
-                description="The user in question",
-                required=False,
-            ),
-            reasonOption,
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("remove.user"))
     async def removeRole(
         self,
         ctx: SlashContext,
@@ -218,20 +157,7 @@ class BaseModeration(commands.Cog):
             )
         )
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        name="kick",
-        description="Kick a user",
-        options=[
-            manage_commands.create_option(
-                name="User",
-                description="The user in question",
-                option_type=6,
-                required=True,
-            ),
-            reasonOption,
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("kick.user"))
     async def kick(
         self,
         ctx: SlashContext,
@@ -254,20 +180,7 @@ class BaseModeration(commands.Cog):
             )
         )
 
-    @cog_ext.cog_subcommand(
-        base="user",
-        name="ban",
-        description="Ban a user",
-        options=[
-            manage_commands.create_option(
-                name="User",
-                description="The user in question",
-                option_type=6,
-                required=True,
-            ),
-            reasonOption,
-        ],
-    )
+    @cog_ext.cog_subcommand(**jsonManager.getDecorator("ban.user"))
     async def ban(
         self,
         ctx: SlashContext,

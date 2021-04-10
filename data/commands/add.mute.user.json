@@ -1,0 +1,52 @@
+{
+  "decorator": {
+    "name": "add",
+    "description": "Mute the specified user",
+    "options": [
+      {
+        "name": "user",
+        "description": "The user to mute",
+        "type": 6,
+        "required": true,
+        "choices": []
+      },
+      {
+        "name": "time",
+        "description": "How long to mute the user for",
+        "type": 4,
+        "required": true,
+        "choices": []
+      },
+      {
+        "name": "unit",
+        "description": "The unit of time",
+        "type": 4,
+        "required": true,
+        "choices": [
+          {
+            "value": 1,
+            "name": "minutes"
+          },
+          {
+            "value": 2,
+            "name": "hours"
+          },
+          {
+            "value": 3,
+            "name": "days"
+          }
+        ]
+      },
+      {
+        "name": "reason",
+        "description": "Specify a reason for this action",
+        "type": 3,
+        "required": false,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "user",
+    "subcommand_group": "mute"
+  }
+}

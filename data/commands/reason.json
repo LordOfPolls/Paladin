@@ -1,0 +1,23 @@
+{
+  "decorator": {
+    "name": "reason",
+    "description": "Add a reason to an action",
+    "options": [
+      {
+        "name": "id",
+        "description": "The id of the action you want to attach a reason to",
+        "type": 4,
+        "required": true,
+        "choices": []
+      },
+      {
+        "name": "reason",
+        "description": "The reason for this action",
+        "type": 3,
+        "required": true,
+        "choices": []
+      }
+    ],
+    "guild_ids": null
+  }
+}

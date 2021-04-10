@@ -1,0 +1,18 @@
+{
+  "decorator": {
+    "name": "setrole",
+    "description": "Set your servers mute role",
+    "options": [
+      {
+        "name": "role",
+        "description": "Your mute role",
+        "type": 8,
+        "required": true,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "user",
+    "subcommand_group": "mute"
+  }
+}

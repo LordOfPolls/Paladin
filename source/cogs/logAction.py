@@ -5,7 +5,7 @@ import logging
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 
-from source import utilities
+from source import utilities, jsonManager
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::ActLog")
@@ -186,21 +186,7 @@ class LogAction(commands.Cog):
 
     # endregion: formatters
 
-    @cog_ext.cog_slash(
-        name="reason",
-        options=[
-            manage_commands.create_option(
-                name="id",
-                description="The id of the action you want to attach a reason to",
-                option_type=int,
-                required=True,
-            ),
-            manage_commands.create_option(
-                name="reason", description="The reason for this action", option_type=str, required=True
-            ),
-        ],
-        description="Add a reason to an action",
-    )
+    @cog_ext.cog_slash(**jsonManager.getDecorator("reason"))
     async def reason_cmd(self, ctx: SlashContext, id, reason):
         await ctx.defer(hidden=True)
         action_data: dict = await self.bot.db.execute(

@@ -1,0 +1,25 @@
+{
+  "decorator": {
+    "name": "clear",
+    "description": "Mute the specified user",
+    "options": [
+      {
+        "name": "user",
+        "description": "The user to unmute",
+        "type": 6,
+        "required": true,
+        "choices": []
+      },
+      {
+        "name": "reason",
+        "description": "Specify a reason for this action",
+        "type": 3,
+        "required": false,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "user",
+    "subcommand_group": "mute"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "decorator": {
+    "name": "disable",
+    "description": "Disable auto delete",
+    "options": [
+      {
+        "name": "channel",
+        "description": "The channel you want to auto-delete in (default is here)",
+        "type": 7,
+        "required": false,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "autodelete"
+  }
+}

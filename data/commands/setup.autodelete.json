@@ -1,0 +1,24 @@
+{
+  "decorator": {
+    "name": "setup",
+    "description": "Setup auto-delete",
+    "options": [
+      {
+        "name": "time",
+        "description": "How many minutes before a message is deleted",
+        "type": 4,
+        "required": true,
+        "choices": []
+      },
+      {
+        "name": "channel",
+        "description": "The channel you want to auto-delete in (default is here)",
+        "type": 7,
+        "required": false,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "autodelete"
+  }
+}

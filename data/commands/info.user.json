@@ -1,0 +1,17 @@
+{
+  "decorator": {
+    "name": "info",
+    "description": "Get information about a user",
+    "options": [
+      {
+        "name": "User",
+        "description": "The user in question",
+        "type": 6,
+        "required": true,
+        "choices": []
+      }
+    ],
+    "guild_ids": null,
+    "base": "user"
+  }
+}

@@ -37,7 +37,8 @@ bot = dataclass.Bot(
 )
 slash = bot.slash
 
-slash.logger = utilities.getLog("slashAPI", logging.DEBUG)
+utilities.getLog("discord", logging.INFO)
+utilities.getLog("discord_slash", logging.INFO)
 bot.perms = "8"
 
 
@@ -68,9 +69,11 @@ async def startupTasks():
     log.info("Running cog setup tasks")
     for cog in bot.cogs:
         _c = bot.get_cog(cog)
-        if hasattr(_c, "setup"):
-            await _c.setup()
-
+        try:
+            if hasattr(_c, "setup"):
+                await _c.setup()
+        except Exception as e:
+            log.error("".join(traceback.format_exception(type(e), e, e.__traceback__)))
     bot.paladinEvents.process = True
     bot.paladinEvents.task = asyncio.create_task(bot.paladinEvents.event_loop())
 

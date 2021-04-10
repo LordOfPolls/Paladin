@@ -28,7 +28,7 @@ def getLog(filename, level=logging.DEBUG) -> logging:
     """ Sets up logging, to be imported by other files """
     streamHandler = colorlog.StreamHandler()
     streamFormatter = ColoredFormatter(
-        "{asctime} {log_color}|| {levelname:^8} || {name:^13s} || {reset}{message}",
+        "{asctime} {log_color}|| {levelname:^8} || {name:^15s} || {reset}{message}",
         datefmt="%H:%M:%S",
         reset=True,
         log_colors={

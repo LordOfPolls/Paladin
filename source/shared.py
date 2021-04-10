@@ -23,6 +23,8 @@ class ModActions(enum.IntEnum):
     warn = 4
     roleGive = 5
     roleRem = 6
+    mute = 7
+    unmute = 8
 
 
 class Action:

@@ -21,6 +21,7 @@ bot = dataclass.Bot(
     intents=intents,
     cogList=[
         "source.cogs.base",
+        "source.cogs.mute",
         "source.cogs.modmail",
         "source.cogs.modlog",
         "source.cogs.logAction",

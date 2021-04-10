@@ -84,6 +84,12 @@ class LogAction(commands.Cog):
         elif action.action_type == ModActions.warn:
             emb = self.fmt_warn(action, emb)
 
+        elif action.action_type == ModActions.mute:
+            emb = self.fmt_mute(action, emb)
+
+        elif action.action_type == ModActions.unmute:
+            emb = self.fmt_unmute(action, emb)
+
         else:
             log.warning(f"Unhandled action: {ModActions(action.action_type).name}")
             emb.title = f"Uncaught event: {action.action_type}"
@@ -158,6 +164,24 @@ class LogAction(commands.Cog):
         actChannel: discord.TextChannel = action.extra
         emb.title = f"{self.emoji['deleted']}Channel Purged"
         emb.add_field(name="Channel", value=actChannel.mention, inline=False)
+        return emb
+
+    def fmt_mute(self, action, emb):
+        emb.title = f"{self.emoji['voiceLocked']}User Muted"
+        emb.add_field(
+            name="User",
+            value=f"{action.user.name} #{action.user.discriminator} ({action.user.mention})",
+            inline=False,
+        )
+        return emb
+
+    def fmt_unmute(self, action, emb):
+        emb.title = f"{self.emoji['voice']}User Un-Muted"
+        emb.add_field(
+            name="User",
+            value=f"{action.user.name} #{action.user.discriminator} ({action.user.mention})",
+            inline=False,
+        )
         return emb
 
     # endregion: formatters

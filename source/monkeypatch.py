@@ -123,7 +123,7 @@ async def slsh_invoke_command(self, func, ctx, args):
                 # i hate that i need to do this, but welcome to the joy of monkey patching
                 # this basically checks if the error decorator needs a reference to self passing
                 if "self" in inspect.signature(func.on_error).parameters:
-                    await func.on_error(func.__class__, ctx, ex)
+                    await func.on_error(func.cog, ctx, ex)
                     return
                 else:
                     await func.on_error(ctx, ex)

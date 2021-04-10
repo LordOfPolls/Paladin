@@ -84,6 +84,11 @@ class LogAction(commands.Cog):
         elif action.action_type == ModActions.warn:
             emb = self.fmt_warn(action, emb)
 
+        else:
+            log.warning(f"Unhandled action: {ModActions(action.action_type).name}")
+            emb.title = f"Uncaught event: {action.action_type}"
+            emb.description = action.__repr__()
+
         # Add generic data to embed
         emb.add_field(
             name="Moderator",

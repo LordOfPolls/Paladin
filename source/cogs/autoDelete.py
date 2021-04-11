@@ -122,7 +122,7 @@ class AutoDelete(commands.Cog):
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("setup.autodelete"))
     @max_concurrency
     @commands.has_permissions(manage_messages=True)
-    async def setup_cmd(self, ctx: SlashContext, time: int, channel: discord.TextChannel = None):
+    async def setup_cmd(self, ctx: SlashContext, time: int, unit: int, channel: discord.TextChannel = None):
         await ctx.defer(hidden=True)
 
         # sanity check
@@ -134,6 +134,11 @@ class AutoDelete(commands.Cog):
 
         if time < 1:
             return await ctx.send("Time must be at least 1 minute", hidden=True)
+        if time >= 1:
+            if unit == 2:
+                time *= 60
+            elif unit == 3:
+                time *= 1440
 
         # get current guild data
         guild_data = self.guild_data[str(ctx.guild.id)]
@@ -164,7 +169,7 @@ class AutoDelete(commands.Cog):
             )
             await ctx.send(
                 f"New Messages sent in `{channel.name}` will now be deleted after `{time}` minute{'s' if time > 1 else ''}\n"
-                f"**Note:** Use `/messages purge` if you want to remove existing messages",
+                f"**Note:** This channel will be checked for messages that match that rule within the a minute",
                 hidden=True,
             )
         except Exception as e:

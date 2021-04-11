@@ -5,10 +5,30 @@
     "options": [
       {
         "name": "time",
-        "description": "How many minutes before a message is deleted",
+        "description": "How long before a message is deleted",
         "type": 4,
         "required": true,
         "choices": []
+      },
+            {
+        "name": "unit",
+        "description": "The unit of time",
+        "type": 4,
+        "required": true,
+        "choices": [
+          {
+            "value": 1,
+            "name": "minutes"
+          },
+          {
+            "value": 2,
+            "name": "hours"
+          },
+          {
+            "value": 3,
+            "name": "days"
+          }
+        ]
       },
       {
         "name": "channel",

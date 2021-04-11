@@ -226,7 +226,7 @@ class BaseModeration(commands.Cog):
             log.error(error)
 
     @kick.error
-    async def purge_error(self, ctx, error):
+    async def kick_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send("Sorry you need `kick_members` to use that command", hidden=True)
         else:
@@ -234,7 +234,7 @@ class BaseModeration(commands.Cog):
             log.error(error)
 
     @ban.error
-    async def purge_error(self, ctx, error):
+    async def ban_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send("Sorry you need `ban_members` to use that command", hidden=True)
         else:

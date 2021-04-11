@@ -44,6 +44,10 @@ class Mute(commands.Cog):
         await self.cache_and_schedule()
         log.debug(f"Started scheduler with {len(self.scheduler.get_jobs())}")
 
+    def cog_unload(self):
+        log.debug("Shutting down scheduler")
+        self.scheduler.shutdown(wait=False)
+
     async def cache_and_schedule(self):
         """Caches guild data and schedules auto-un-mutes"""
         all_user_data: dict = await self.bot.db.execute(f"SELECT * FROM paladin.users")

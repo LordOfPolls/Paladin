@@ -80,6 +80,12 @@ class Bot(commands.Bot):
 
         for cog in tuple(self.cogs):
             try:
+                _c = self.get_cog(cog)
+                if hasattr(_c, "scheduler"):
+                    # cog has a scheduler, shut it down
+                    _c.scheduler.shutdown(wait=False)
+                    while not _c.scheduler.running:
+                        await asyncio.sleep(1)
                 self.remove_cog(cog)
             except Exception:
                 pass

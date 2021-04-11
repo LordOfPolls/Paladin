@@ -84,11 +84,11 @@ class Base(commands.Cog):
         stdout = io.StringIO()
 
         to_compile = "async def func():\n%s" % textwrap.indent(body, "  ")
-
-        try:
-            exec(to_compile, env)
-        except SyntaxError as e:
-            return await ctx.send(self.get_syntax_error(e))
+        async with ctx.channel.typing():
+            try:
+                exec(to_compile, env)
+            except SyntaxError as e:
+                return await ctx.send(self.get_syntax_error(e))
 
         func = env["func"]
         try:
@@ -106,10 +106,16 @@ class Base(commands.Cog):
 
             if ret is None:
                 if value:
-                    await ctx.send("```py\n%s\n```" % value)
+                    try:
+                        await ctx.message.reply("```py\n%s\n```" % value)
+                    except:
+                        await ctx.send("```py\n%s\n```" % value)
             else:
                 self._last_result = ret
-                await ctx.send("```py\n%s%s\n```" % (value, ret))
+                try:
+                    await ctx.message.reply("```py\n%s%s\n```" % (value, ret))
+                except:
+                    await ctx.send("```py\n%s%s\n```" % (value, ret))
 
 
 def setup(bot):

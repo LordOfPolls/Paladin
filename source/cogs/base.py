@@ -24,6 +24,7 @@ class Base(commands.Cog):
         self.emoji = "🚩"
 
     @commands.command(name="Shutdown", brief="Shuts down the bot")
+    @commands.is_owner()
     async def cmdShutdown(self, ctx: commands.Context):
         if await self.bot.is_owner(ctx.author):
             log.warning("Shutdown called")
@@ -31,12 +32,14 @@ class Base(commands.Cog):
             await self.bot.close()
 
     @commands.command(name="setname", brief="Renames the bot")
+    @commands.is_owner()
     async def cmdSetName(self, ctx: commands.Context, name: str):
         if await self.bot.is_owner(ctx.author):
             await self.bot.user.edit(username=name)
             await ctx.send(f"Set name to {name}")
 
     @commands.command(name="setAvatar", brief="Sets the bots avatar")
+    @commands.is_owner()
     async def cmdSetAvatar(self, ctx: commands.Context):
         if await self.bot.is_owner(ctx.author):
             if ctx.message.attachments:

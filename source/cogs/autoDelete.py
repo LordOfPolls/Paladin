@@ -91,6 +91,7 @@ class AutoDelete(commands.Cog):
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("disable.autodelete"))
     @max_concurrency
+    @commands.has_permissions(manage_messages=True)
     async def disable_cmd(self, ctx: SlashContext, channel: discord.TextChannel = None):
         await ctx.defer(hidden=True)
 
@@ -120,6 +121,7 @@ class AutoDelete(commands.Cog):
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("setup.autodelete"))
     @max_concurrency
+    @commands.has_permissions(manage_messages=True)
     async def setup_cmd(self, ctx: SlashContext, time: int, channel: discord.TextChannel = None):
         await ctx.defer(hidden=True)
 
@@ -175,6 +177,8 @@ class AutoDelete(commands.Cog):
     async def cmd_error(self, ctx, error):
         if isinstance(error, commands.MaxConcurrencyReached):
             await ctx.send("Hang on, another user in your server is updating your server's settings", hidden=True)
+        elif isinstance(error, commands.CheckFailure):
+            await ctx.send("Sorry you need `manage_messages` to use that command", hidden=True)
         else:
             log.error(error)
             await ctx.send("An error occurred executing that command... please try again later", hidden=True)

@@ -180,6 +180,11 @@ class Mute(commands.Cog):
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("setrole.mute.user"))
     @commands.max_concurrency(1, BucketType.guild, wait=False)
+    @commands.check_any(
+        commands.has_permissions(manage_messages=True),
+        commands.has_permissions(manage_roles=True),
+        commands.has_permissions(mute_members=True),
+    )
     async def set_mute_role(self, ctx: SlashContext, role: discord.Role):
         await ctx.defer()
 
@@ -196,6 +201,11 @@ class Mute(commands.Cog):
         )
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("add.mute.user"))
+    @commands.check_any(
+        commands.has_permissions(manage_messages=True),
+        commands.has_permissions(manage_roles=True),
+        commands.has_permissions(mute_members=True),
+    )
     async def mute(self, ctx: SlashContext, user: discord.Member, time: int, unit: int, reason: str = None):
         # scale up time value to match unit (ie minutes/hours/days
         await ctx.defer(hidden=True)
@@ -232,6 +242,11 @@ class Mute(commands.Cog):
         await self.write_user_to_db(user, muted=True, mute_time=mute_time)
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("clear.mute.user"))
+    @commands.check_any(
+        commands.has_permissions(manage_messages=True),
+        commands.has_permissions(manage_roles=True),
+        commands.has_permissions(mute_members=True),
+    )
     async def unmute(self, ctx: SlashContext, user: discord.Member, reason: str = None):
         # search database for muteRole id
         role = await self.get_mute_role(ctx.guild)
@@ -266,6 +281,11 @@ class Mute(commands.Cog):
                 "please move my role above any roles you want me to add",
                 hidden=True,
             )
+        elif isinstance(error, commands.CheckFailure):
+            await ctx.send(
+                "Sorry you are missing permissions. You need one of the following:\n"
+                "- `manage_messages`\n- `manage_roles`\n- `mute_members`"
+            )
         else:
             await ctx.send("An error occurred executing that command... please try again later", hidden=True)
 
@@ -273,6 +293,11 @@ class Mute(commands.Cog):
     async def role_error(self, ctx: SlashContext, error):
         if isinstance(error, commands.MaxConcurrencyReached):
             await ctx.send("Hang on, another user in your server is updating your server's settings", hidden=True)
+        elif isinstance(error, commands.CheckFailure):
+            await ctx.send(
+                "Sorry you are missing permissions. You need one of the following:\n"
+                "- `manage_messages`\n- `manage_roles`\n- `mute_members`"
+            )
         else:
             log.error(error)
             await ctx.send("An error occurred executing that command... please try again later", hidden=True)

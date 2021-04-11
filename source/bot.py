@@ -5,6 +5,8 @@ from datetime import datetime
 
 import discord
 import discord_slash
+import discord_slash.error
+from discord.ext import commands
 from discord_slash import SlashContext
 from discord_slash.utils import manage_commands
 
@@ -32,13 +34,13 @@ bot = dataclass.Bot(
         "source.cogs.autoDelete",
     ],
     help_command=None,
-    sync_commands=False,
+    sync_commands=True,
     activity=discord.Game("Startup"),
 )
 slash = bot.slash
 
 utilities.getLog("discord", logging.INFO)
-utilities.getLog("discord_slash", logging.INFO)
+utilities.getLog("discord_slash", logging.DEBUG)
 bot.perms = "8"
 
 
@@ -129,17 +131,36 @@ async def on_slash_command(ctx: SlashContext):
 
 @bot.event
 async def on_command_error(ctx, ex):
-    return
+    await on_slash_command_error(ctx, ex)
 
 
 @bot.event
 async def on_slash_command_error(ctx, ex):
-    log.error(
-        "Ignoring exception in command {}: {}".format(
-            ctx.command,
-            "".join(traceback.format_exception(type(ex), ex, ex.__traceback__)),
+
+    # default error messages
+    if isinstance(ex, commands.CheckFailure) or isinstance(ex, discord_slash.error.CheckFailure):
+        try:
+            await ctx.send("Sorry you don't have the correct permissions for that command")
+        except:
+            pass
+    elif isinstance(ex, commands.MaxConcurrencyReached):
+        try:
+            await ctx.send("Hang on, too many people are using this command")
+        except:
+            pass
+    elif isinstance(ex, commands.CommandOnCooldown):
+        try:
+            await ctx.send("Slow Down! Wait {:.2f}s".format(ex.retry_after))
+        except:
+            pass
+    else:
+        # log anything that isnt the above
+        log.error(
+            "Ignoring exception in command {}: {}".format(
+                ctx.command,
+                "".join(traceback.format_exception(type(ex), ex, ex.__traceback__)),
+            )
         )
-    )
 
 
 async def guildPurge(guildID: int):

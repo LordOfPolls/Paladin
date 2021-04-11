@@ -2,6 +2,8 @@ import enum
 import typing
 
 import discord
+from discord.ext import commands
+from discord_slash import SlashContext
 from discord_slash.utils import manage_commands
 
 
@@ -78,3 +80,28 @@ reasonOption = manage_commands.create_option(
     option_type=str,
     required=False,
 )
+
+
+def is_user_moderator(perms: discord.Permissions):
+    """Does the user have *any* moderator perms"""
+    if (
+        perms.administrator
+        or perms.manage_guild
+        or perms.manage_channels
+        or perms.manage_messages
+        or perms.manage_roles
+        or perms.mute_members
+        or perms.manage_permissions
+    ):
+        return True
+    return False
+
+
+def check_is_moderator():
+    async def sub_check(ctx: SlashContext):
+        if ctx.guild is None:
+            return False
+        user_perms = ctx.author.permissions_in(ctx.channel)
+        return is_user_moderator(user_perms)
+
+    return commands.check(sub_check)

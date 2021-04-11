@@ -3,7 +3,7 @@ import logging
 from discord.ext import commands
 from discord_slash import SlashContext, cog_ext
 
-from source import utilities, dataclass, jsonManager
+from source import utilities, dataclass, jsonManager, shared
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::warn")
@@ -36,6 +36,7 @@ class UserWarnings(commands.Cog):
         return data
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("add.warn.user"))
+    @shared.check_is_moderator()
     async def warnCMD(
         self,
         ctx: SlashContext,
@@ -109,6 +110,7 @@ class UserWarnings(commands.Cog):
         )
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("clear.warn.user"))
+    @shared.check_is_moderator()
     async def warnClearCMD(
         self,
         ctx: SlashContext,

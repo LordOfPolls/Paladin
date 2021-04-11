@@ -195,6 +195,9 @@ class LogAction(commands.Cog):
         if action_data is None:
             return await ctx.send("No action exists with that ID")
 
+        if str(ctx.author.id) != str(action_data["moderatorID"]):
+            return await ctx.send("You are not the person who performed that action", hidden=True)
+
         chnl = ctx.guild.get_channel(int(action_data.get("channelID")))
 
         # update value in db

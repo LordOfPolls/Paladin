@@ -223,7 +223,7 @@ class Mute(commands.Cog):
             if unit == 2:
                 time *= 60
             elif unit == 3:
-                unit *= 1440
+                time *= 1440
             mute_time = datetime.utcnow() + timedelta(minutes=time)
         else:
             # mute forever

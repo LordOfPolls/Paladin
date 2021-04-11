@@ -1,8 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 
-from discord.ext import commands
-from discord_slash import SlashContext, cog_ext
+from discord_slash import cog_ext
 
 from source import utilities, dataclass, jsonManager
 from source.shared import *

@@ -1,7 +1,6 @@
 import logging
 
-from discord.ext import commands
-from discord_slash import SlashContext, cog_ext
+from discord_slash import cog_ext
 
 from source import utilities, dataclass, jsonManager, shared
 from source.shared import *

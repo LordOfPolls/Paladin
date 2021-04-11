@@ -7,8 +7,8 @@ import traceback
 import discord_slash
 from discord.ext.commands import CooldownMapping, CommandOnCooldown
 from discord.utils import snowflake_time
-from source import utilities
 
+from source import utilities
 
 # i am more than aware monkey patching is not a good idea, but i really dont care
 # the only downside is i have to maintain this and it might break when the lib updates

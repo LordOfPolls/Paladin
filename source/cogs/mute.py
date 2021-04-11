@@ -7,9 +7,8 @@ import discord.errors
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers import cron
-from discord.ext import commands
 from discord.ext.commands import BucketType
-from discord_slash import cog_ext, SlashContext
+from discord_slash import cog_ext
 
 from source import utilities, dataclass, jsonManager
 from source.shared import *
@@ -42,7 +41,7 @@ class Mute(commands.Cog):
         log.debug("Starting scheduler...")
         self.scheduler.start()
         await self.cache_and_schedule()
-        log.debug(f"Started scheduler with {len(self.scheduler.get_jobs())}")
+        log.debug(f"Started scheduler with {len(self.scheduler.get_jobs())} jobs")
 
     def cog_unload(self):
         log.debug("Shutting down scheduler")

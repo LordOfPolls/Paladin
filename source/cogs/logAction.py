@@ -2,8 +2,7 @@ import base64
 import json
 import logging
 
-from discord.ext import commands
-from discord_slash import cog_ext, SlashContext
+from discord_slash import cog_ext
 
 from source import utilities, jsonManager
 from source.shared import *

@@ -27,9 +27,7 @@ class AutoDelete(commands.Cog):
     def __init__(self, bot):
         self.bot: dataclass.Bot = bot
 
-        self.lock = asyncio.Lock()
         self.emoji = bot.emoji_list
-        self.prefix = "delMessage"
 
         self.guild_data = {}
 
@@ -53,7 +51,6 @@ class AutoDelete(commands.Cog):
             guild_data["autoDelChannel"] = json.loads(guild_data["autoDelChannel"])
 
             temp[guild_data["guildID"]] = guild_data
-        log.debug(temp)
         self.guild_data = temp.copy()
 
     @tasks.loop(minutes=1)
@@ -83,8 +80,11 @@ class AutoDelete(commands.Cog):
                                 if len(messages_to_delete_output) > 100:
                                     # bulk delete can only take 100 messages at a time, so if we have over 100 messages
                                     # split the list, and send 2 calls
-                                    one = messages_to_delete_output[: len(messages_to_delete_output) / 2]
-                                    two = messages_to_delete_output[len(messages_to_delete_output) / 2 :]
+                                    one = messages_to_delete_output[:100]
+                                    two = [msg for msg in messages_to_delete_output if msg not in one]
+
+                                    print(len(one))
+                                    print(len(two))
 
                                     await channel.delete_messages(one)
                                     await channel.delete_messages(two)

@@ -4,7 +4,7 @@
     "description": "Ban a user",
     "options": [
       {
-        "name": "User",
+        "name": "user",
         "description": "The user in question",
         "type": 6,
         "required": true,

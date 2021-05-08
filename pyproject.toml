@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "paladin"
-version = "0.4.0"
+version = "0.5.0"
 description = "A discord moderation bot using slash commands"
 authors = ["LordOfPolls <ddavidallen13@gmail.com>"]
 

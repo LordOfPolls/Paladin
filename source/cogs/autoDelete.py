@@ -29,31 +29,11 @@ class AutoDelete(commands.Cog):
 
         self.emoji = bot.emoji_list
 
-        self.guild_data = {}
-
         self.events = self.bot.paladinEvents
-
-        self.events.subscribe_to_event(self.cache_guild_data, "autoDelCache")
 
     async def setup(self):
         # await self.cache_guild_data()
-        await self.cache_guild_data()
         self.task.start()
-
-    async def cache_guild_data(self, *args):
-        """Caches the guild data to avoid waiting on db operations constantly
-        i dont need args but it makes this method work with my event caller"""
-        log.debug("Caching guild data from DB")
-        all_guild_data = await self.bot.db.execute(f"SELECT * FROM paladin.guilds")
-        temp = {}
-        for guild_data in all_guild_data:
-            # preload autodel data
-            try:
-                guild_data["autoDelChannel"] = json.loads(guild_data["autoDelChannel"])
-            except TypeError:
-                continue
-            temp[guild_data["guildID"]] = guild_data
-        self.guild_data = temp.copy()
 
     @tasks.loop(minutes=1)
     async def task(self):
@@ -61,9 +41,12 @@ class AutoDelete(commands.Cog):
             log.spam("Running delete task...")
 
             for guild in self.bot.guilds:
-                guild_data = self.guild_data.get(str(guild.id))
+                guild_data = await self.bot.get_guild_data(guild.id)
                 if guild_data:
-                    auto_del_data = guild_data["autoDelChannel"]
+                    auto_del_data = guild_data.auto_delete_data
+                    if not auto_del_data:
+                        continue
+
                     for channel_data in auto_del_data:
                         channel: discord.TextChannel = self.bot.get_channel(int(channel_data["channel_id"]))
                         if channel:
@@ -106,13 +89,12 @@ class AutoDelete(commands.Cog):
 
         if channel is None:
             channel = ctx.channel
-        guild_data = self.guild_data
+        guild_data = await self.bot.get_guild_data(ctx.guild.id)
 
-        if guild_data is None or ctx.guild.id not in guild_data.keys():
+        if guild_data is None:
             return await ctx.send(f"I'm not auto-deleting messages in {channel.mention}", hidden=True)
 
-        guild_data = guild_data.get(str(ctx.guild.id))
-        auto_del_data: list = guild_data.get("autoDelChannel")
+        auto_del_data: list = guild_data.auto_delete_data
 
         if guild_data is None or str(channel.id) not in str(auto_del_data):
             return await ctx.send(f"I'm not auto-deleting messages in {channel.mention}", hidden=True)
@@ -123,13 +105,9 @@ class AutoDelete(commands.Cog):
 
         del auto_del_data[index]
 
-        to_upload = json.dumps(auto_del_data)
-        await self.bot.db.execute(
-            f"INSERT INTO paladin.guilds (guildID, autoDelChannel) VALUES ('{ctx.guild.id}', '{to_upload}') "
-            f"ON DUPLICATE KEY UPDATE autoDelChannel = '{to_upload}'"
-        )
+        guild_data.auto_delete_data = auto_del_data
+        await self.bot.redis.set(guild_data.key, guild_data.to_json())
 
-        await self.events.add_item("autoDelCache")
         await ctx.send(f"Got it, auto-deletion has been disabled in {channel.mention}", hidden=True)
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("setup.autodelete"))
@@ -156,9 +134,9 @@ class AutoDelete(commands.Cog):
             return await ctx.send("Bots cannot bulk delete messages older than 14 days")
 
         # get current guild data
-        guild_data = self.guild_data.get(str(ctx.guild.id))
+        guild_data = await self.bot.get_guild_data(ctx.guild_id)
         if guild_data is not None:
-            auto_del_data = guild_data["autoDelChannel"]
+            auto_del_data = guild_data.auto_delete_data
         else:
             auto_del_data = []
 
@@ -177,11 +155,9 @@ class AutoDelete(commands.Cog):
             auto_del_data.append(data)
 
         try:
-            to_upload = json.dumps(auto_del_data)
-            await self.bot.db.execute(
-                f"INSERT INTO paladin.guilds (guildID, autoDelChannel) VALUES ('{ctx.guild.id}', '{to_upload}') "
-                f"ON DUPLICATE KEY UPDATE autoDelChannel = '{to_upload}'"
-            )
+            guild_data.auto_delete_data = auto_del_data
+            await self.bot.redis.set(guild_data.key, guild_data.to_json())
+
             await ctx.send(
                 f"New Messages sent in `{channel.name}` will now be deleted after `{time}` minute{'s' if time > 1 else ''}\n"
                 f"**Note:** This channel will be checked for messages that match that rule within the a minute",

@@ -1,3 +1,4 @@
+import json
 import logging
 import traceback
 from datetime import datetime, timedelta
@@ -49,23 +50,20 @@ class Mute(commands.Cog):
 
     async def cache_and_schedule(self):
         """Caches guild data and schedules auto-un-mutes"""
-        all_user_data: dict = await self.bot.db.execute(f"SELECT * FROM paladin.users")
-        for user_data in all_user_data:
-            await self._schedule_job(user_data)
-
-        # # cache guild data
-        # all_guild_data = await self.bot.db.execute(f"SELECT * FROM paladin.guilds")
-        # temp = {}
-        # for guild_data in all_guild_data:
-        #     temp[guild_data["guildID"]] = guild_data
-        #
-        # self.guild_data = temp.copy()
+        keys = await self.bot.redis.keys("member||*")
+        for key in keys:
+            data = await self.bot.redis.get(key)
+            raw_data = json.loads(data.decode())
+            await self._schedule_job(raw_data)
 
     async def _schedule_job(self, user_data: dict):
         """Schedules a job based on user_data passed"""
         try:
-            job_id = f"{user_data.get('guildID')}|{user_data.get('userID')}"
-            run_time: datetime = user_data.get("unmuteTime")
+            job_id = f"{user_data.get('guild_id')}|{user_data.get('user_id')}"
+            run_time: datetime = user_data.get("unmute_time")
+
+            if isinstance(run_time, str):
+                run_time = datetime.strptime(run_time, "%Y-%m-%d %H:%M:%S.%f")
 
             if run_time is not None and run_time <= datetime.utcnow():
                 # bumps events in the past a few seconds into the future
@@ -93,7 +91,7 @@ class Mute(commands.Cog):
                 else:
                     self.scheduler.add_job(
                         func=self.auto_unmute,
-                        kwargs={"user_id": user_data.get("userID"), "guild_id": user_data.get("guildID")},
+                        kwargs={"user_id": user_data.get("user_id"), "guild_id": user_data.get("guild_id")},
                         trigger=trigger,
                         id=job_id,
                         name=f"Auto-unmute job for {job_id}",
@@ -119,16 +117,17 @@ class Mute(commands.Cog):
             if not guild or not user:
                 return
 
-            user_data: dict = await self.bot.db.execute(
-                f"SELECT * FROM paladin.users WHERE guildID = '{guild.id}' AND userID = '{user.id}'", getOne=True
-            )
+            user_data = await self.bot.get_member_data(guild_id, user.id)
+
             # check if user is still muted
-            if not bool(user_data.get("muted")):
+            if not user_data.muted:
+                print("Already unmuted")
                 # user has been unmuted already
                 return
 
-            unmute_time = user_data.get("unmuteTime")
-            if not unmute_time <= datetime.utcnow():
+            unmute_time = user_data.unmute_time
+            if not (unmute_time.hour <= datetime.utcnow().hour and unmute_time.minute <= datetime.utcnow().minute):
+                print("needs re-schedule")
                 # todo: reschedule for correct time
                 return
 
@@ -136,9 +135,9 @@ class Mute(commands.Cog):
             await user.remove_roles(await self.get_mute_role(guild))
 
             # remove from db
-            await self.bot.db.execute(
-                f"UPDATE paladin.users SET muted=false, unmuteTime=NULL WHERE guildID = '{guild.id}' AND userID = '{user.id}'"
-            )
+            user_data.unmute_time = None
+            user_data.muted = False
+            await self.bot.redis.set(user_data.key, user_data.to_json())
 
             me = guild.get_member(self.bot.user.id)
             await self.bot.paladinEvents.add_item(
@@ -155,28 +154,22 @@ class Mute(commands.Cog):
 
     async def write_user_to_db(self, user: discord.Member, muted: bool, mute_time: typing.Optional[datetime] = None):
         """Write a users mute status to the database"""
-        muted = "true" if muted else "false"  # sql-ify
-        mute_time = f"'{mute_time}'" if mute_time else "NULL"  # sql-ify
 
-        await self.bot.db.execute(
-            f"INSERT INTO paladin.users (userID, guildID, muted, unmuteTime) VALUES ('{user.id}', '{user.guild.id}', {muted}, {mute_time}) "
-            f"ON DUPLICATE KEY UPDATE muted = {muted}, unmuteTime = {mute_time}"
-        )
-        # todo: eliminate the need for this db call (not strictly necessary but would be cleaner)
-        user_data = await self.bot.db.execute(
-            f"SELECT * FROM paladin.users WHERE guildID = '{user.guild.id}' and userID = '{user.id}'", getOne=True
-        )
-        await self._schedule_job(user_data)
+        user_data = await self.bot.get_member_data(guild_id=user.guild.id, user_id=user.id)
+        user_data.muted = muted
+        user_data.unmute_time = mute_time
+
+        await self.bot.redis.set(user_data.key, user_data.to_json())
+
+        await self._schedule_job(user_data.__dict__)
 
     async def get_mute_role(self, guild: discord.Guild) -> typing.Optional[discord.Role]:
         """Gets the mute role for a specified guild"""
-        guild_data = await self.bot.db.execute(
-            f"SELECT * FROM paladin.guilds WHERE guildID = '{guild.id}'", getOne=True
-        )
-        if guild_data is None or guild_data.get("muteRoleID") is None:
+        guild_data = await self.bot.get_guild_data(guild.id)
+        if guild_data is None or guild_data.role_mute_id is None:
             return None
 
-        role = guild.get_role(int(guild_data.get("muteRoleID")))
+        role = guild.get_role(int(guild_data.role_mute_id))
         return role
 
     # region: commands
@@ -192,10 +185,9 @@ class Mute(commands.Cog):
         await ctx.defer()
 
         try:
-            await self.bot.db.execute(
-                f"INSERT INTO paladin.guilds (guildID, muteRoleID) VALUES ('{ctx.guild_id}', '{role.id}') "
-                f"ON DUPLICATE KEY UPDATE muteRoleID = '{role.id}'"
-            )
+            guild_data = await self.bot.get_guild_data(ctx.guild.id)
+            guild_data.role_mute_id = role.id
+            await self.bot.redis.set(guild_data.key, guild_data.to_json())
         except Exception as e:
             log.error(f"Error setting mute role: {e}")
             return await ctx.send("Failed to set mute role... please try again later")
@@ -232,6 +224,8 @@ class Mute(commands.Cog):
         timefmt = f"for {self.bot.strf_delta(timedelta(minutes=time))}" if time else "forever"
 
         await user.add_roles(role, reason=f"Mute requested by {ctx.author.name}#{ctx.author.discriminator}")
+        await self.write_user_to_db(user, muted=True, mute_time=mute_time)
+
         await ctx.send(f"Muted {user.mention} {timefmt}", hidden=True, allowed_mentions=discord.AllowedMentions.none())
         await self.bot.paladinEvents.add_item(
             Action(
@@ -242,7 +236,6 @@ class Mute(commands.Cog):
                 reason=reason,
             )
         )
-        await self.write_user_to_db(user, muted=True, mute_time=mute_time)
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("clear.mute.user"))
     @commands.check_any(
@@ -290,6 +283,7 @@ class Mute(commands.Cog):
                 "- `manage_messages`\n- `manage_roles`\n- `mute_members`"
             )
         else:
+            log.error("".join(traceback.format_exception(type(error), error, error.__traceback__)))
             await ctx.send("An error occurred executing that command... please try again later", hidden=True)
 
     @set_mute_role.error

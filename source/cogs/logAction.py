@@ -4,7 +4,7 @@ import logging
 
 from discord_slash import cog_ext
 
-from source import utilities, jsonManager
+from source import utilities, jsonManager, dataclass
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::ActLog")
@@ -14,7 +14,7 @@ class LogAction(commands.Cog):
     """Configuration commands"""
 
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: dataclass.Bot = bot
 
         self.emoji = bot.emoji_list
 
@@ -22,12 +22,8 @@ class LogAction(commands.Cog):
 
     async def _get_new_action_id(self, guild: discord.Guild) -> int:
         """Gets an action ID for a new action"""
-        count = await self.bot.db.execute(
-            f"SELECT COUNT(*) FROM paladin.modActions WHERE guildID = '{guild.id}'",
-            getOne=True,
-        )
-        actionID = int(count["COUNT(*)"]) + 1
-        return actionID
+        keys = await self.bot.redis.keys(f"action||{guild.id}")
+        return len(keys) + 1
 
     async def _writeActionToDb(
         self,
@@ -47,32 +43,26 @@ class LogAction(commands.Cog):
 
             reason = json.dumps(reason)
             reason = base64.b64encode(reason.encode()).decode("utf-8")
-            query = "INSERT INTO paladin.modActions (actionID, guildID, action, moderatorID, userID, roleID, reason, channelID, messageID) VALUES ({actionID}, '{guild}', {action}, '{modID}', {userID}, {role}, '{reason}', '{messageID}', '{channelID}')".format(
-                actionID=actionID,
-                guild=guild.id,
-                action=modAction,
-                modID=moderator.id,
-                userID=f"'{user.id}'" if user else "NULL",
-                role=f"'{role.id}'" if role else "NULL",
-                reason=await self.bot.db.escape(reason),
-                messageID=message.id,
-                channelID=message.channel.id,
-            )
-            log.info("writing to db")
-            await self.bot.db.execute(query)
+
+            obj = dataclass.ModAction(guild.id, actionID, modAction, moderator.id)
+            obj.reason = reason
+            obj.message_id = message.id
+            obj.channel_id = message.channel.id
+            obj.user_id = user.id if user else None
+            obj.role_id = role.id if role else None
+
+            await self.bot.redis.set(obj.key, obj.to_json())
         except Exception as e:
             log.error(e)
 
     async def log_mod_action(self, action: Action):
         """Logs a moderation action"""
+        guild_data = await self.bot.get_guild_data(guild_id=action.guild.id)
 
-        guild_data = await self.bot.db.execute(
-            f"SELECT * FROM paladin.guilds WHERE guildID = '{action.guild.id}'", getOne=True
-        )
         if guild_data:
-            if guild_data.get("actionLogChannel") is None:
+            if guild_data.channel_action_log_id is None:
                 return
-            channel: discord.TextChannel = self.bot.get_channel(int(guild_data.get("actionLogChannel")))
+            channel: discord.TextChannel = self.bot.get_channel(int(guild_data.channel_action_log_id))
             if not channel:
                 return
         else:
@@ -200,23 +190,20 @@ class LogAction(commands.Cog):
     @cog_ext.cog_slash(**jsonManager.getDecorator("reason"))
     async def reason_cmd(self, ctx: SlashContext, id, reason):
         await ctx.defer(hidden=True)
-        action_data: dict = await self.bot.db.execute(
-            f"SELECT * FROM paladin.modActions WHERE actionID = {id} AND guildID = '{ctx.guild_id}'", getOne=True
-        )
+        action_data = await self.bot.get_action_data(ctx.guild_id, id)
         if action_data is None:
             return await ctx.send("No action exists with that ID")
 
-        if str(ctx.author.id) != str(action_data["moderatorID"]):
+        if str(ctx.author.id) != str(action_data.moderator_id):
             return await ctx.send("You are not the person who performed that action", hidden=True)
 
-        chnl = ctx.guild.get_channel(int(action_data.get("channelID")))
+        chnl = ctx.guild.get_channel(int(action_data.channel_id))
 
         # update value in db
         db_reason = json.dumps(reason)
         db_reason = base64.b64encode(db_reason.encode()).decode("utf-8")
-        await self.bot.db.execute(
-            f"UPDATE paladin.modActions SET reason = '{db_reason}' WHERE actionID = {id} AND guildID = '{ctx.guild_id}'"
-        )
+        action_data.reason = db_reason
+        await self.bot.redis.set(action_data.key, action_data.to_json())
 
         # try to update message in discord
         message: discord.Message = await self.bot.getMessage(channel=chnl, messageID=int(action_data.get("messageID")))
@@ -249,10 +236,10 @@ class LogAction(commands.Cog):
 
         await ctx.defer(hidden=True)
 
-        await self.bot.db.execute(
-            f"INSERT INTO paladin.guilds (guildID, actionLogChannel) VALUES ('{ctx.guild_id}', '{channel.id}') "
-            f"ON DUPLICATE KEY UPDATE actionLogChannel = '{channel.id}'"
-        )
+        guild_data = await self.bot.get_guild_data(ctx.guild_id)
+        guild_data.channel_action_log_id = channel.id
+
+        await self.bot.redis.set(guild_data.key, guild_data.to_json())
 
         await ctx.send(f"Set action log channel to {channel.mention}", hidden=True)
 
@@ -264,7 +251,11 @@ class LogAction(commands.Cog):
     )
     async def _clear_channel(self, ctx):
         await ctx.defer()
-        await self.bot.db.execute(f"UPDATE paladin.guilds SET actionLogChannel = NULL WHERE guildID = '{ctx.guild_id}'")
+        guild_data = await self.bot.get_guild_data(ctx.guild_id)
+        guild_data.channel_action_log_id = None
+
+        await self.bot.redis.set(guild_data.key, guild_data.to_json())
+
         await ctx.send(f"Disabled action logging")
 
 

@@ -12,27 +12,11 @@ class UserWarnings(commands.Cog):
     """Configuration commands"""
 
     def __init__(self, bot: dataclass.Bot):
-        self.bot = bot
+        self.bot: dataclass.Bot = bot
 
         self.slash = bot.slash
 
         self.emoji = bot.emoji_list
-
-    async def get_user(self, user: discord.User, guild: discord.Guild) -> dict:
-        data = await self.bot.db.execute(
-            f"SELECT * FROM paladin.users WHERE guildID ='{guild.id}' and userID = '{user.id}'",
-            getOne=True,
-        )
-        if data is None:
-            # create a user entry
-            await self.bot.db.execute(f"INSERT INTO paladin.users (userID, guildID) VALUES ('{user.id}', '{guild.id}')")
-            data = {
-                "userID": str(user.id),
-                "guildID": str(guild.id),
-                "warnings": 0,
-                "muted": False,
-            }
-        return data
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("add.warn.user"))
     @shared.check_is_moderator()
@@ -44,8 +28,8 @@ class UserWarnings(commands.Cog):
     ):
         """Warns a user, 3 warnings and the user will be kicked"""
         await ctx.defer()
-        userData = await self.get_user(user, ctx.guild)
-        warning_num = int(userData["warnings"]) + 1
+        user_data = await self.bot.get_member_data(ctx.guild_id, user.id)
+        warning_num = int(user_data.warnings) + 1
 
         embed = discord.Embed(title=f"Warning for {user.name} #{user.discriminator}", color=0xE7C30D)
         embed.add_field(
@@ -104,9 +88,8 @@ class UserWarnings(commands.Cog):
             )
         )
 
-        await self.bot.db.execute(
-            f"UPDATE paladin.users SET warnings={warning_num} WHERE guildID ='{ctx.guild_id}' AND userID ='{user.id}'"
-        )
+        user_data.warnings = warning_num
+        await self.bot.redis.set(user_data.key, user_data.to_json())
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("clear.warn.user"))
     @shared.check_is_moderator()
@@ -119,9 +102,10 @@ class UserWarnings(commands.Cog):
         await ctx.defer()
 
         try:
-            await self.bot.db.execute(
-                f"UPDATE paladin.users SET warnings=0 WHERE guildID='{ctx.guild_id}' AND userID='{user.id}'"
-            )
+            user_data = await self.bot.get_member_data(ctx.guild_id, user.id)
+            user_data.warnings = 0
+            await self.bot.redis.set(user_data.key, user_data.to_json())
+
             await ctx.send(f"Cleared warnings for {user.name} #{user.discriminator}")
         except Exception as e:
             log.error(f"Error clearing warnings: {e}")

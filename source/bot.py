@@ -24,7 +24,6 @@ bot = dataclass.Bot(
     cogList=[
         "source.cogs.base",
         "source.cogs.mute",
-        "source.cogs.modmail",
         "source.cogs.modlog",
         "source.cogs.logAction",
         "source.cogs.baseModeration",
@@ -34,7 +33,7 @@ bot = dataclass.Bot(
         "source.cogs.autoDelete",
     ],
     help_command=None,
-    sync_commands=True,
+    sync_commands=False,
     activity=discord.Game("Startup"),
 )
 slash = bot.slash
@@ -62,12 +61,6 @@ async def startupTasks():
     bot.appInfo = await bot.application_info()
     bot.startTime = datetime.now()
 
-    log.info("Establishing connection to database...")
-    try:
-        await bot.db.connect()
-    except Exception as e:
-        log.error(e)
-
     log.info("Running cog setup tasks")
     for cog in bot.cogs:
         _c = bot.get_cog(cog)
@@ -93,8 +86,6 @@ async def on_ready():
         f"Logged in as         : {bot.user.name} #{bot.user.discriminator}",
         f"User ID              : {bot.user.id}",
         f"Start Time           : {bot.startTime.ctime()}",
-        f"DB Connection Type   : "
-        f"{'Tunneled' if bot.db.tunnel and bot.db.dbPool else 'Direct' if bot.db.dbPool else 'Not Connected'}",
         f"Server Count         : {len(bot.guilds)}",
         f"Cog Count            : {len(bot.cogs)}",
         f"Command Count        : {len(slash.commands)}",

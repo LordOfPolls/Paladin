@@ -2,6 +2,7 @@ import asyncio
 import json
 import subprocess
 import typing
+import redis
 from datetime import datetime, timedelta
 
 import discord
@@ -10,7 +11,133 @@ import toml
 from discord.ext import commands
 from discord_slash import SlashContext
 
-from source import databaseManager, events, monkeypatch
+from source import events, monkeypatch
+
+
+class AsyncRedis:
+    def __init__(self, host="localhost", port=6379, db=0):
+        self.__redis = redis.Redis(host=host, port=port, db=db)
+
+    async def set(self, *args, **kwargs):
+        return await asyncio.to_thread(self.__redis.set, *args, **kwargs)
+
+    async def get(self, key):
+        return await asyncio.to_thread(self.__redis.get, key)
+
+    async def keys(self, pattern):
+        return await asyncio.to_thread(self.__redis.keys, pattern)
+
+    async def ping(self):
+        return await asyncio.to_thread(self.__redis.ping)
+
+
+class Guild:
+    """An object representing a guild"""
+
+    def __init__(self, guild_id: int):
+        self.guild_id: int = guild_id
+
+        # roles for this guild
+        self.role_mute_id: typing.Optional[int] = None
+
+        # channels for this guild
+        self.channel_action_log_id: typing.Optional[int] = None
+        self.channel_mod_log_id: typing.Optional[int] = None
+
+        # [{"channel_id": 11111111111111, "delete_after": 100},]
+        self.auto_delete_data: list = []
+
+    @property
+    def key(self):
+        """The key for this user in the redis db"""
+        return f"guild||{self.guild_id}"
+
+    def to_json(self):
+        """Dump this object to json ready for push to redis"""
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+    def load_from_dict(self, raw_data: dict):
+        """Load values from a dict"""
+        for key in raw_data.keys():
+            if hasattr(self, key):
+                self.__setattr__(key, raw_data.get(key))
+
+
+class Member:
+    """An object representing a member of a guild"""
+
+    def __init__(self, guild_id: int, user_id: int):
+        self.guild_id: int = guild_id
+        self.user_id: int = user_id
+
+        # state of this user
+        self.warnings: int = 0
+        self.muted: bool = False
+        self.unmute_time: typing.Optional[datetime] = None
+
+    @property
+    def key(self):
+        """The key for this user in the redis db"""
+        return f"member||{self.guild_id}{self.user_id}"
+
+    def to_json(self):
+        """Dump this object to json ready for push to redis"""
+
+        # this is dirty but it works
+        if self.unmute_time is not None:
+            self.unmute_time = str(self.unmute_time)
+
+        data = json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+        if self.unmute_time is not None:
+            self.unmute_time = datetime.strptime(self.unmute_time, "%Y-%m-%d %H:%M:%S.%f")
+
+        return data
+
+    def load_from_dict(self, raw_data: dict):
+        """Load values from a dict"""
+
+        for key in raw_data.keys():
+            if hasattr(self, key):
+                self.__setattr__(key, raw_data.get(key))
+
+        if self.unmute_time is not None:
+            self.unmute_time = datetime.strptime(self.unmute_time, "%Y-%m-%d %H:%M:%S.%f")
+
+
+class ModAction:
+    """An object representing a moderation action"""
+
+    def __init__(self, guild_id: int, action_id: int, action_type: int, moderator_id: int):
+        self.guild_id: int = guild_id
+        self.action_id: int = action_id
+        self.action_type: int = action_type
+
+        self.message_id: typing.Optional[int] = None
+        self.channel_id: typing.Optional[int] = None
+
+        # users involved in this action
+        self.moderator_id: int = moderator_id
+        self.user_id: typing.Optional[int] = None
+
+        self.role_id: typing.Optional[int] = None
+
+        self.reason: str = f"**Moderator:** Please use `/reason {self.action_id}`"
+
+    @property
+    def key(self):
+        """The key for this user in the redis db"""
+        return f"action||{self.guild_id}{self.action_id}"
+
+    def to_json(self):
+        """Dump this object to json ready for push to redis"""
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+    def load_from_dict(self, raw_data: dict):
+        """Load values from a dict"""
+        for key in raw_data.keys():
+            if hasattr(self, key):
+                self.__setattr__(key, raw_data.get(key))
 
 
 class Bot(commands.Bot):
@@ -22,7 +149,7 @@ class Bot(commands.Bot):
         self.cogList = cogList
         """A list of cogs to be mounted"""
 
-        self.db = databaseManager.DBConnector()
+        self.redis = AsyncRedis()
         """The bots database"""
 
         self.appInfo: discord.AppInfo = None
@@ -66,6 +193,39 @@ class Bot(commands.Bot):
             await ctx.send("Sorry this bot can only be used in a server")
             return False
         return True
+
+    async def get_guild_data(self, guild_id: int) -> Guild:
+        data = await self.redis.get(f"guild||{guild_id}")
+        if data is None:
+            data = Guild(guild_id)
+        else:
+            raw_data = json.loads(data.decode())
+            data = Guild(raw_data.get("guild_id"))
+            data.load_from_dict(raw_data)
+
+        return data
+
+    async def get_action_data(self, guild_id: int, action_id: int) -> ModAction:
+        data = await self.redis.get(f"action||{guild_id}{action_id}")
+        if data is None:
+            return None
+        else:
+            raw_data = json.loads(data.decode())
+            data = ModAction(guild_id, action_id, 0, 0)
+            data.load_from_dict(raw_data)
+
+        return data
+
+    async def get_member_data(self, guild_id: int, user_id: int) -> Member:
+        data = await self.redis.get(f"member||{guild_id}{user_id}")
+        if data is None:
+            data = Member(guild_id, user_id)
+        else:
+            raw_data = json.loads(data.decode())
+            data = Member(guild_id, user_id)
+            data.load_from_dict(raw_data)
+
+        return data
 
     async def close(self):
         """Close the connection to discord"""

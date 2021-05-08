@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils import manage_commands
 
-from source import utilities, jsonManager, shared
+from source import utilities, jsonManager, shared, dataclass
 
 log: logging.Logger = utilities.getLog("Cog::uInfo")
 
@@ -16,7 +16,7 @@ class UserInfo(commands.Cog):
     """Gets information about a user"""
 
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: dataclass.Bot = bot
 
         self.emoji = bot.emoji_list
 
@@ -29,17 +29,14 @@ class UserInfo(commands.Cog):
         emb.description = ""
 
         # get db data on user
-        user_data: typing.Optional[dict] = await self.bot.db.execute(
-            f"SELECT * FROM paladin.users WHERE guildID ='{ctx.guild_id}' and userID = '{user.id}'",
-            getOne=True,
-        )
+        user_data = await self.bot.get_member_data(ctx.guild.id, user.id)
         user_perms: discord.Permissions = ctx.author.permissions_in(ctx.channel)
         if shared.is_user_moderator(user_perms):
             if user_data:
-                if user_data.get("warnings") != 0:
-                    warnings = user_data.get("warnings")
+                if user_data.warnings != 0:
+                    warnings = user_data.warnings
                     emb.description += f"{self.emoji['rules']} {warnings} warning{'s' if warnings > 1 else ''}\n"
-                if user_data.get("muted") == 1:
+                if user_data.muted == 1:
                     emb.description += f"{self.emoji['voiceLocked']} Muted\n"
 
         # names

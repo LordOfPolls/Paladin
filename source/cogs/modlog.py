@@ -51,13 +51,11 @@ class ModLog(commands.Cog):
     async def event_handler(self, event, **kwargs):
         """Handles all discord py events"""
 
-        guild_data = await self.bot.db.execute(
-            f"SELECT * FROM paladin.guilds WHERE guildID = '{kwargs.get('guild').id}'", getOne=True
-        )
+        guild_data = await self.bot.get_guild_data(kwargs.get("guild").id)
         if guild_data:
-            if guild_data.get("modLogChannel") is None:
+            if guild_data.channel_mod_log_id is None:
                 return
-            output_channel: discord.TextChannel = self.bot.get_channel(int(guild_data.get("modLogChannel")))
+            output_channel: discord.TextChannel = self.bot.get_channel(int(guild_data.channel_mod_log_id))
             if not output_channel:
                 return
         else:
@@ -301,10 +299,10 @@ class ModLog(commands.Cog):
 
         await ctx.defer(hidden=True)
 
-        await self.bot.db.execute(
-            f"INSERT INTO paladin.guilds (guildID, modLogChannel) VALUES ('{ctx.guild_id}', '{channel.id}') "
-            f"ON DUPLICATE KEY UPDATE modLogChannel = '{channel.id}'"
-        )
+        guild_data = await self.bot.get_guild_data(ctx.guild_id)
+        guild_data.channel_mod_log_id = channel
+
+        await self.bot.redis.set(guild_data.key, guild_data.to_json())
 
         await ctx.send(f"Set moderation log channel to {channel.mention}", hidden=True)
 
@@ -316,7 +314,11 @@ class ModLog(commands.Cog):
     )
     async def _clear_channel(self, ctx):
         await ctx.defer()
-        await self.bot.db.execute(f"UPDATE paladin.guilds SET modLogChannel = NULL WHERE guildID = '{ctx.guild_id}'")
+        guild_data = await self.bot.get_guild_data(ctx.guild_id)
+        guild_data.channel_mod_log_id = None
+
+        await self.bot.redis.set(guild_data.key, guild_data.to_json())
+
         await ctx.send(f"Disabled moderation logging")
 
 

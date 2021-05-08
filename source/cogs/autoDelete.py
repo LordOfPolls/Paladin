@@ -48,8 +48,10 @@ class AutoDelete(commands.Cog):
         temp = {}
         for guild_data in all_guild_data:
             # preload autodel data
-            guild_data["autoDelChannel"] = json.loads(guild_data["autoDelChannel"])
-
+            try:
+                guild_data["autoDelChannel"] = json.loads(guild_data["autoDelChannel"])
+            except TypeError:
+                continue
             temp[guild_data["guildID"]] = guild_data
         self.guild_data = temp.copy()
 

@@ -65,7 +65,19 @@ class LogAction(commands.Cog):
 
     async def log_mod_action(self, action: Action):
         """Logs a moderation action"""
-        channel: discord.TextChannel = self.bot.get_channel(743377002647519274)
+
+        guild_data = await self.bot.db.execute(
+            f"SELECT * FROM paladin.guilds WHERE guildID = '{action.guild.id}'", getOne=True
+        )
+        if guild_data:
+            if guild_data.get("actionLogChannel") is None:
+                return
+            channel: discord.TextChannel = self.bot.get_channel(int(guild_data.get("actionLogChannel")))
+            if not channel:
+                return
+        else:
+            return
+
         emb = discord.Embed(colour=discord.Colour.blurple())
 
         token = await self._get_new_action_id(action.guild)
@@ -183,7 +195,7 @@ class LogAction(commands.Cog):
         )
         return emb
 
-    # endregion: formatters
+    # endregion: formattersguildID
 
     @cog_ext.cog_slash(**jsonManager.getDecorator("reason"))
     async def reason_cmd(self, ctx: SlashContext, id, reason):
@@ -219,6 +231,41 @@ class LogAction(commands.Cog):
             original_embed.add_field(name="Action ID", value=str(id), inline=False)
             await message.edit(embed=original_embed)
         await ctx.send(f"Your reason has been stored for action #{id}")
+
+    @cog_ext.cog_subcommand(
+        base="log",
+        subcommand_group="action",
+        name="set-channel",
+        description="Set the channel for action logging",
+        options=[
+            manage_commands.create_option(
+                name="channel", option_type=7, description="The channel to send to", required=True
+            )
+        ],
+    )
+    async def _set_channel(self, ctx: SlashContext, channel: discord.TextChannel):
+        if not isinstance(channel, discord.TextChannel):
+            return await ctx.send("Sorry, logs can only be sent to a text channel")
+
+        await ctx.defer(hidden=True)
+
+        await self.bot.db.execute(
+            f"INSERT INTO paladin.guilds (guildID, actionLogChannel) VALUES ('{ctx.guild_id}', '{channel.id}') "
+            f"ON DUPLICATE KEY UPDATE actionLogChannel = '{channel.id}'"
+        )
+
+        await ctx.send(f"Set action log channel to {channel.mention}", hidden=True)
+
+    @cog_ext.cog_subcommand(
+        base="log",
+        subcommand_group="action",
+        name="clear-channel",
+        description="Clear the set channel for action logs (disables it)",
+    )
+    async def _clear_channel(self, ctx):
+        await ctx.defer()
+        await self.bot.db.execute(f"UPDATE paladin.guilds SET actionLogChannel = NULL WHERE guildID = '{ctx.guild_id}'")
+        await ctx.send(f"Disabled action logging")
 
 
 def setup(bot):

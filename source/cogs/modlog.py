@@ -1,5 +1,9 @@
 import logging
+import pprint
 from datetime import datetime
+
+import discord
+from discord_slash import cog_ext
 
 from source import utilities, dataclass
 from source.shared import *
@@ -46,15 +50,30 @@ class ModLog(commands.Cog):
 
     async def event_handler(self, event, **kwargs):
         """Handles all discord py events"""
-        print(f"{event=}, {kwargs=}")
+
+        guild_data = await self.bot.db.execute(
+            f"SELECT * FROM paladin.guilds WHERE guildID = '{kwargs.get('guild').id}'", getOne=True
+        )
+        if guild_data:
+            if guild_data.get("modLogChannel") is None:
+                return
+            output_channel: discord.TextChannel = self.bot.get_channel(int(guild_data.get("modLogChannel")))
+            if not output_channel:
+                return
+        else:
+            return
+
         emb = discord.Embed(colour=discord.Colour.blurple())
-        output_channel: discord.TextChannel = self.bot.get_channel(743377002647519274)
 
         # todo: replace this ugliness with a match statement when 3.10 is fully released
         if event == EventFlags.memJoin:
             await self.fmt_member_add(emb, kwargs.get("member"))
         elif event == EventFlags.memLeave:
             await self.fmt_member_leave(emb, kwargs.get("member"))
+        elif event == EventFlags.memUpdate:
+            resp = await self.fmt_member_update(emb, kwargs)
+            if resp is None:
+                return
         elif event == EventFlags.memBan:
             await self.fmt_ban(emb, kwargs.get("member"))
         elif event == EventFlags.memUnban:
@@ -66,7 +85,7 @@ class ModLog(commands.Cog):
         elif event == EventFlags.chnlPurge:
             await self.fmt_purge(emb, kwargs)
         else:
-            # shouldn't happen, but if someone messes around with the flags  this will be triggered
+            # catches un-handled events
             return log.error(f"Uncaught event: {event}")
 
         await self._send_with_webhook(output_channel, emb)
@@ -98,9 +117,68 @@ class ModLog(commands.Cog):
             inline=False,
         )
 
+    async def fmt_member_update(self, emb: discord.Embed, kwargs: dict):
+        emb.title = f"{self.emoji['members']} User Updated"
+        emb.colour = discord.Colour.dark_grey()
+
+        before: typing.Union[discord.Member, discord.User] = kwargs.get("before")
+        after: typing.Union[discord.Member, discord.User] = kwargs.get("after")
+
+        if (
+            before.status != after.status
+            or before.activity != after.activity
+            or before.discriminator != after.discriminator
+            or before.avatar_url != after.avatar_url
+        ):
+            # ignore certain changes
+            return None
+
+        emb.set_thumbnail(url=after.avatar_url)
+        emb.add_field(name=after.display_name, value=f"#{after.discriminator}", inline=False)
+
+        if before.nick != after.nick:
+            # nickname has changed
+            emb.add_field(name="Old nickname", value=before.nick, inline=False)
+            emb.add_field(name="New nickname", value=after.nick, inline=False)
+
+        if before.roles != after.roles:
+            # roles have updated
+            new_roles = []
+            lost_roles = []
+
+            # check for gained roles
+            for role in after.roles:
+                if role not in before.roles:
+                    new_roles.append(role.name)
+
+            # check for lost roles
+            for role in before.roles:
+                if role not in after.roles:
+                    lost_roles.append(role.name)
+
+            if new_roles:
+                emb.add_field(name="New roles", value="\n".join(new_roles), inline=False)
+            if lost_roles:
+                emb.add_field(name="Lost roles", value="\n".join(lost_roles), inline=False)
+
+        if before.pending != after.pending:
+            if after.pending:
+                emb.description = f"{after.display_name} is no longer pending verification"
+            else:
+                emb.description = f"{after.display_name} is now pending verification"
+
+        if before.name != after.name:
+            emb.add_field(name="Old name", value=before.name, inline=False)
+            emb.add_field(name="New name", value=after.name, inline=False)
+
+        return emb
+
     async def fmt_member_leave(self, emb: discord.Embed, member: discord.Member):
         emb.title = f"{self.emoji['MemberRemove']} User Left"
         emb.colour = discord.Colour.red()
+        emb.set_thumbnail(url=member.avatar_url)
+        emb.add_field(name=member.display_name, value=f"#{member.discriminator}", inline=False)
+
         emb.add_field(name="ID", value=member.id, inline=False)
         emb.add_field(
             name="Join Date:",
@@ -117,6 +195,9 @@ class ModLog(commands.Cog):
     async def fmt_member_add(self, emb: discord.Embed, member: discord.Member):
         emb.title = f"{self.emoji['MemberAdd']} User Joined"
         emb.colour = discord.Colour.green()
+        emb.set_thumbnail(url=member.avatar_url)
+        emb.add_field(name=member.display_name, value=f"#{member.discriminator}", inline=False)
+
         emb.add_field(name="ID", value=member.id, inline=False)
         emb.add_field(
             name="Account Creation Date:",
@@ -135,14 +216,28 @@ class ModLog(commands.Cog):
         emb.set_thumbnail(url=member.avatar_url)
 
     async def fmt_ban(self, emb: discord.Embed, member: discord.Member):
-        # todo: complete ban event - unsure what data to show in embed
         emb.title = f"{self.emoji['banned']} User Banned"
         emb.colour = discord.Colour.dark_red()
+        emb.set_thumbnail(url=member.avatar_url)
+        emb.add_field(name=member.display_name, value=f"#{member.discriminator}")
+
+        emb.add_field(
+            name="Join Date:",
+            value=self.bot.formatDate(member.joined_at),
+            inline=False,
+        )
+        emb.add_field(
+            name="Banned After:",
+            value=self.bot.strf_delta(datetime.utcnow() - member.joined_at),
+            inline=False,
+        )
 
     async def fmt_unban(self, emb: discord.Embed, member: discord.Member):
         # todo: complete unban event - unsure what data to show in embed
         emb.title = f"{self.emoji['unbanned']} User Banned"
         emb.colour = discord.Colour.green()
+        emb.set_thumbnail(url=member.avatar_url)
+        emb.add_field(name=member.display_name, value=f"#{member.discriminator}")
 
     async def fmt_purge(self, emb: discord.Embed, kwargs: dict):
         emb.title = f"{self.emoji['deleted']} {len(kwargs['messages'])} Messages Deleted"
@@ -188,6 +283,41 @@ class ModLog(commands.Cog):
         )
 
     # endregion: events
+
+    @cog_ext.cog_subcommand(
+        base="log",
+        subcommand_group="moderation",
+        name="set-channel",
+        description="Set the channel for moderation event logging",
+        options=[
+            manage_commands.create_option(
+                name="channel", option_type=7, description="The channel to send to", required=True
+            )
+        ],
+    )
+    async def _set_channel(self, ctx: SlashContext, channel: discord.TextChannel):
+        if not isinstance(channel, discord.TextChannel):
+            return await ctx.send("Sorry, logs can only be sent to a text channel")
+
+        await ctx.defer(hidden=True)
+
+        await self.bot.db.execute(
+            f"INSERT INTO paladin.guilds (guildID, modLogChannel) VALUES ('{ctx.guild_id}', '{channel.id}') "
+            f"ON DUPLICATE KEY UPDATE modLogChannel = '{channel.id}'"
+        )
+
+        await ctx.send(f"Set moderation log channel to {channel.mention}", hidden=True)
+
+    @cog_ext.cog_subcommand(
+        base="log",
+        subcommand_group="moderation",
+        name="clear-channel",
+        description="Clear the set channel for moderation logs (disables it)",
+    )
+    async def _clear_channel(self, ctx):
+        await ctx.defer()
+        await self.bot.db.execute(f"UPDATE paladin.guilds SET modLogChannel = NULL WHERE guildID = '{ctx.guild_id}'")
+        await ctx.send(f"Disabled moderation logging")
 
 
 def setup(bot):

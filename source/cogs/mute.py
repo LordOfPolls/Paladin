@@ -144,7 +144,7 @@ class Mute(commands.Cog):
             me = guild.get_member(self.bot.user.id)
             await self.bot.paladinEvents.add_item(
                 Action(
-                    actionType=ModActions.mute,
+                    actionType=ModActions.unmute,
                     moderator=me,
                     guild=guild,
                     user=user,

@@ -137,7 +137,7 @@ class LogAction(commands.Cog):
         return emb
 
     def fmt_role(self, action, emb):
-        emb.title = f"{self.emoji['members']}Role {'Given' if action == ModActions.roleGive else 'Removed'}"
+        emb.title = f"{self.emoji['members']} Role {'Given' if action == ModActions.roleGive else 'Removed'}"
         emb.add_field(
             name="User",
             value=f"{action.user.name} #{action.user.discriminator} ({action.user.mention})",
@@ -148,9 +148,9 @@ class LogAction(commands.Cog):
 
     def fmt_warn(self, action, emb):
         if "Cleared" in str(action.extra):
-            emb.title = f"{self.emoji['rules']}User Warnings Cleared"
+            emb.title = f"{self.emoji['rules']} User Warnings Cleared"
         else:
-            emb.title = f"{self.emoji['rules']}User Warned"
+            emb.title = f"{self.emoji['rules']} User Warned"
 
         warnings = action.extra
         emb.add_field(
@@ -163,12 +163,12 @@ class LogAction(commands.Cog):
 
     def fmt_purge(self, action, emb):
         actChannel: discord.TextChannel = action.extra
-        emb.title = f"{self.emoji['deleted']}Channel Purged"
+        emb.title = f"{self.emoji['deleted']} Channel Purged"
         emb.add_field(name="Channel", value=actChannel.mention, inline=False)
         return emb
 
     def fmt_mute(self, action, emb):
-        emb.title = f"{self.emoji['voiceLocked']}User Muted"
+        emb.title = f"{self.emoji['voiceLocked']} User Muted"
         emb.add_field(
             name="User",
             value=f"{action.user.name} #{action.user.discriminator} ({action.user.mention})",
@@ -177,7 +177,7 @@ class LogAction(commands.Cog):
         return emb
 
     def fmt_unmute(self, action, emb):
-        emb.title = f"{self.emoji['voice']}User Un-Muted"
+        emb.title = f"{self.emoji['voice']} User Un-Muted"
         emb.add_field(
             name="User",
             value=f"{action.user.name} #{action.user.discriminator} ({action.user.mention})",
@@ -206,7 +206,7 @@ class LogAction(commands.Cog):
         await self.bot.redis.set(action_data.key, action_data.to_json())
 
         # try to update message in discord
-        message: discord.Message = await self.bot.getMessage(channel=chnl, messageID=int(action_data.get("messageID")))
+        message: discord.Message = await self.bot.getMessage(channel=chnl, messageID=int(action_data.message_id))
 
         if message:
             original_embed = message.embeds[0]
@@ -214,8 +214,8 @@ class LogAction(commands.Cog):
                 field = original_embed.fields[i]
                 if field.name.startswith("Reason"):
                     original_embed.remove_field(i)
-            original_embed.add_field(name="Reason", value=reason, inline=False)
             original_embed.add_field(name="Action ID", value=str(id), inline=False)
+            original_embed.add_field(name="Reason", value=reason, inline=False)
             await message.edit(embed=original_embed)
         await ctx.send(f"Your reason has been stored for action #{id}")
 

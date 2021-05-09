@@ -2,32 +2,45 @@ import asyncio
 import json
 import subprocess
 import typing
-import redis
 from datetime import datetime, timedelta
 
 import discord
 import discord_slash
+import redis
 import toml
 from discord.ext import commands
 from discord_slash import SlashContext
 
-from source import events, monkeypatch
+from source import events, monkeypatch, utilities
 
 
 class AsyncRedis:
     def __init__(self, host="localhost", port=6379, db=0):
+        self.log = utilities.getLog("Redis", 0)
+
+        self.log.info("Connecting to redis...")
         self.__redis = redis.Redis(host=host, port=port, db=db)
 
-    async def set(self, *args, **kwargs):
-        return await asyncio.to_thread(self.__redis.set, *args, **kwargs)
+        try:
+            self.__redis.ping()
+        except Exception as e:
+            self.log.critical(e)
+            exit(1)
+
+    async def set(self, key, value, ex=None, px=None, nx=False, xx=False, keepttl=False):
+        self.log.debug(f"SET:: {key=} {value=} {ex=} {px=} {nx=} {xx=} {keepttl=}")
+        return await asyncio.to_thread(self.__redis.set, key, value, ex=ex, px=px, nx=nx, xx=xx, keepttl=keepttl)
 
     async def get(self, key):
+        self.log.debug(f"GET:: {key=}")
         return await asyncio.to_thread(self.__redis.get, key)
 
     async def keys(self, pattern):
+        self.log.debug(f"KEYS:: {pattern=}")
         return await asyncio.to_thread(self.__redis.keys, pattern)
 
     async def ping(self):
+        self.log.debug(f"PING:: None")
         return await asyncio.to_thread(self.__redis.ping)
 
 
@@ -54,7 +67,7 @@ class Guild:
 
     def to_json(self):
         """Dump this object to json ready for push to redis"""
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=0)
 
     def load_from_dict(self, raw_data: dict):
         """Load values from a dict"""
@@ -87,7 +100,7 @@ class Member:
         if self.unmute_time is not None:
             self.unmute_time = str(self.unmute_time)
 
-        data = json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        data = json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=0)
 
         if self.unmute_time is not None:
             self.unmute_time = datetime.strptime(self.unmute_time, "%Y-%m-%d %H:%M:%S.%f")
@@ -131,7 +144,7 @@ class ModAction:
 
     def to_json(self):
         """Dump this object to json ready for push to redis"""
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=0)
 
     def load_from_dict(self, raw_data: dict):
         """Load values from a dict"""

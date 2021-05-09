@@ -123,14 +123,29 @@ class Mute(commands.Cog):
 
             # check if user is still muted
             if not user_data.muted:
-                print("Already unmuted")
-                # user has been unmuted already
+                # user has been un-muted already
                 return
 
             unmute_time = user_data.unmute_time
             if not (unmute_time.hour <= datetime.utcnow().hour and unmute_time.minute <= datetime.utcnow().minute):
-                print("needs re-schedule")
-                # todo: reschedule for correct time
+                # the job has run at the wrong time
+                # this can occur if the user was re-muted for a new time, but for some reason _schedule_job didnt reschedule it
+                job = self.scheduler.get_job(f"{user_data.guild_id}|{user_data.user_id}")
+                if job:
+                    run_time = user_data.unmute_time
+                    if isinstance(run_time, str):
+                        run_time = datetime.strptime(user_data.unmute_time, "%Y-%m-%d %H:%M:%S.%f")
+                    trigger = cron.CronTrigger(
+                        year=run_time.year,
+                        month=run_time.month,
+                        day=run_time.day,
+                        hour=run_time.hour,
+                        minute=run_time.minute,
+                        second=run_time.second,
+                        timezone=pytz.utc,
+                    )
+                    job.reschedule(trigger)
+                    return log.debug(f"Unmute job rescheduled for {run_time.ctime()}")
                 return
 
             # actually unmute
@@ -314,7 +329,7 @@ class Mute(commands.Cog):
                     user_data.muted = False
                     return await self.bot.redis.set(user_data.key, user_data.to_json())
                 else:
-                    reason = "AUTOMATIC ACTION: Re-applying mute role - user rejoined"
+                    reason = "AUTOMATIC ACTION: \nRe-applying mute role - user rejoined"
                     role = await self.get_mute_role(member.guild)
                     await member.add_roles(role, reason=reason)
 

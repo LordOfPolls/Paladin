@@ -22,7 +22,7 @@ class LogAction(commands.Cog):
 
     async def _get_new_action_id(self, guild: discord.Guild) -> int:
         """Gets an action ID for a new action"""
-        keys = await self.bot.redis.keys(f"action||{guild.id}")
+        keys = await self.bot.redis.keys(f"action||{guild.id}*")
         return len(keys) + 1
 
     async def _writeActionToDb(

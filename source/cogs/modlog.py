@@ -97,7 +97,11 @@ class ModLog(commands.Cog):
             if msg:
                 emb.description = f"{self.emoji['link']}[**Jump To Location**]({msg.jump_url})"
                 break
-        emb.add_field(name="Content", value=kwargs["before"].clean_content, inline=False)
+
+        content = kwargs["before"].clean_content
+
+        if content:
+            emb.add_field(name="Content", value=content, inline=False)
         emb.add_field(name="Channel", value=kwargs["before"].channel.mention, inline=False)
 
     async def fmt_msg_edit(self, emb: discord.Embed, kwargs: dict):
@@ -127,6 +131,9 @@ class ModLog(commands.Cog):
             or before.activity != after.activity
             or before.discriminator != after.discriminator
             or before.avatar_url != after.avatar_url
+            or before is None
+            or after is None
+            or before == after
         ):
             # ignore certain changes
             return None
@@ -300,7 +307,7 @@ class ModLog(commands.Cog):
         await ctx.defer(hidden=True)
 
         guild_data = await self.bot.get_guild_data(ctx.guild_id)
-        guild_data.channel_mod_log_id = channel
+        guild_data.channel_mod_log_id = channel.id
 
         await self.bot.redis.set(guild_data.key, guild_data.to_json())
 

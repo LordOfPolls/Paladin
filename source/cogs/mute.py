@@ -34,6 +34,8 @@ class Mute(commands.Cog):
 
         self.guild_data = {}
 
+        self.bot.add_listener(self.on_member_join)
+
         # i know i could use tasks, however i dont want to use interval scheduling, due to the
         # chance it can fail if not checked second by second
         self.scheduler: AsyncIOScheduler = AsyncIOScheduler()  # the task scheduler
@@ -300,6 +302,31 @@ class Mute(commands.Cog):
             await ctx.send("An error occurred executing that command... please try again later", hidden=True)
 
     # endregion
+
+    async def on_member_join(self, member: typing.Union[discord.Member, discord.User]):
+        """Automatically mute a user if they try and bypass the mute"""
+        user_data = await self.bot.get_member_data(member.guild.id, member.id)
+        if user_data:
+            if user_data.muted:
+                # user should be muted, check if mute has expired
+                if user_data.unmute_time <= datetime.utcnow():
+                    # mute has expired, dont re-add it
+                    user_data.muted = False
+                    return await self.bot.redis.set(user_data.key, user_data.to_json())
+                else:
+                    reason = "AUTOMATIC ACTION: Re-applying mute role - user rejoined"
+                    role = await self.get_mute_role(member.guild)
+                    await member.add_roles(role, reason=reason)
+
+                    await self.bot.paladinEvents.add_item(
+                        Action(
+                            actionType=ModActions.mute,
+                            moderator=member.guild.get_member(self.bot.user.id),
+                            guild=member.guild,
+                            user=member,
+                            reason=reason,
+                        )
+                    )
 
 
 def setup(bot):

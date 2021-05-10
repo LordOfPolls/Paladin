@@ -107,7 +107,7 @@ def check_is_moderator():
     return commands.check(sub_check)
 
 
-async def send_with_webhook(name: str, channel: discord.TextChannel, embed: discord.Embed):
+async def send_with_webhook(name: str, channel: discord.TextChannel, embed: discord.Embed = None, file=None):
     """Sends content as a webhook to the desired channel"""
     for _hook in await channel.guild.webhooks():
         if _hook.name == name:
@@ -120,4 +120,5 @@ async def send_with_webhook(name: str, channel: discord.TextChannel, embed: disc
         embed=embed,
         allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=False),
         avatar_url=channel.guild.icon_url,
+        file=file,
     )

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import subprocess
 import typing
 from datetime import datetime, timedelta
@@ -16,7 +17,7 @@ from source import events, monkeypatch, utilities
 
 class AsyncRedis:
     def __init__(self, host="localhost", port=6379, db=0):
-        self.log = utilities.getLog("Redis", 0)
+        self.log = utilities.getLog("Redis", logging.INFO)
 
         self.log.info("Connecting to redis...")
         self.__redis = redis.Redis(host=host, port=port, db=db)
@@ -319,25 +320,27 @@ class Bot(commands.Bot):
         return date.strftime("%b %d %Y %H:%M:%S")
 
     @staticmethod
-    def strf_delta(timeDelta: timedelta) -> str:
+    def strf_delta(time_delta: timedelta, show_seconds=True) -> str:
         """Formats timedelta into a human readable string"""
-        years, days = divmod(timeDelta.days, 365)
-        hours, rem = divmod(timeDelta.seconds, 3600)
+        years, days = divmod(time_delta.days, 365)
+        hours, rem = divmod(time_delta.seconds, 3600)
         minutes, seconds = divmod(rem, 60)
 
-        yearsFmt = f"{years} year{'s' if years > 1 or years == 0 else ''}"
-        daysFmt = f"{days} day{'s' if days > 1 or days == 0 else ''}"
-        hoursFmt = f"{hours} hour{'s' if hours > 1 or hours == 0 else ''}"
-        minutesFmt = f"{minutes} minute{'s' if minutes > 1 or minutes == 0 else ''}"
-        secondsFmt = f"{seconds} second{'s' if seconds > 1 or seconds == 0 else ''}"
+        years_fmt = f"{years} year{'s' if years > 1 or years == 0 else ''}"
+        days_fmt = f"{days} day{'s' if days > 1 or days == 0 else ''}"
+        hours_fmt = f"{hours} hour{'s' if hours > 1 or hours == 0 else ''}"
+        minutes_fmt = f"{minutes} minute{'s' if minutes > 1 or minutes == 0 else ''}"
+        seconds_fmt = f"{seconds} second{'s' if seconds > 1 or seconds == 0 else ''}"
 
         if years >= 1:
-            return f"{yearsFmt} and {daysFmt}"
+            return f"{years_fmt} and {days_fmt}"
         if days >= 1:
-            return f"{daysFmt} and {hoursFmt}"
+            return f"{days_fmt} and {hours_fmt}"
         if hours >= 1:
-            return f"{hoursFmt} and {minutesFmt}"
-        return f"{minutesFmt} and {secondsFmt}"
+            return f"{hours_fmt} and {minutes_fmt}"
+        if show_seconds:
+            return f"{minutes_fmt} and {seconds_fmt}"
+        return f"{minutes_fmt}"
 
     @staticmethod
     def _determine_update():

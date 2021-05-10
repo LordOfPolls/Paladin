@@ -238,12 +238,12 @@ class Mute(commands.Cog):
             mute_time = None
             time = None
 
-        timefmt = f"for {self.bot.strf_delta(timedelta(minutes=time))}" if time else "forever"
+        time_fmt = f"for {self.bot.strf_delta(timedelta(minutes=time), show_seconds=False)}" if time else "forever"
 
         await user.add_roles(role, reason=f"Mute requested by {ctx.author.name}#{ctx.author.discriminator}")
         await self.write_user_to_db(user, muted=True, mute_time=mute_time)
 
-        await ctx.send(f"Muted {user.mention} {timefmt}", hidden=True, allowed_mentions=discord.AllowedMentions.none())
+        await ctx.send(f"Muted {user.mention} {time_fmt}", hidden=True, allowed_mentions=discord.AllowedMentions.none())
         await self.bot.paladinEvents.add_item(
             Action(
                 actionType=ModActions.mute,

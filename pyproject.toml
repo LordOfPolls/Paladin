@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "paladin"
-version = "0.5.0"
+version = "0.5.1"
 description = "A discord moderation bot using slash commands"
 authors = ["LordOfPolls <ddavidallen13@gmail.com>"]
 
@@ -15,6 +15,8 @@ APScheduler = "^3.7.0"
 redis = "^3.5.3"
 
 [tool.poetry.dev-dependencies]
+isort = "^5.8.0"
+black = "^21.5b0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -25,7 +27,9 @@ fuzzywuzzy = ["speedup"]
 
 [tool.black]
 line-length = 120
-use_parentheses = true
+
+[tool.isort]
+profile = "black"
+line_length = 120
 ensure_newline_before_comments = true
 include_trailing_comma = true
-force_grid_wrap = 0

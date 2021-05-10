@@ -1,11 +1,12 @@
+import asyncio
 import logging
-import pprint
+import os
 from datetime import datetime
 
-import discord
 from discord_slash import cog_ext
+from PIL import Image
 
-from source import utilities, dataclass, shared
+from source import dataclass, shared, utilities
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::Log")
@@ -47,6 +48,7 @@ class ModLog(commands.Cog):
             return
 
         emb = discord.Embed(colour=discord.Colour.blurple())
+        file = None
 
         # todo: replace this ugliness with a match statement when 3.10 is fully released
         if event == EventFlags.memJoin:
@@ -64,32 +66,49 @@ class ModLog(commands.Cog):
         elif event == EventFlags.msgEdit:
             await self.fmt_msg_edit(emb, kwargs)
         elif event == EventFlags.msgDelete:
-            await self.fmt_msg_delete(emb, kwargs)
+            file = await self.fmt_msg_delete(emb, kwargs)
         elif event == EventFlags.chnlPurge:
             await self.fmt_purge(emb, kwargs)
         else:
             # catches un-handled events
             return log.error(f"Uncaught event: {event}")
 
-        await shared.send_with_webhook("Moderation Log", output_channel, emb)
+        if not emb == discord.Embed(colour=discord.Colour.blurple()):
+            await shared.send_with_webhook("Moderation Log", output_channel, emb, file)
+            if file:
+                file.fp.close()
 
     # region: formatters
     async def fmt_msg_delete(self, emb: discord.Embed, kwargs: dict):
         emb.title = f"{self.emoji['deleted']} Message Deleted"
         emb.colour = discord.Colour.orange()
+
+        before: discord.Message = kwargs.get("before")
+        file = None
+
         # add a jump to context link
-        async for msg in kwargs["before"].channel.history(limit=1, around=kwargs["before"]):
+        async for msg in before.channel.history(limit=1, around=before):
             if msg:
                 emb.description = f"{self.emoji['link']}[**Jump To Location**]({msg.jump_url})"
                 break
 
-        content = kwargs["before"].clean_content
+        if before.clean_content:
+            emb.add_field(name="Content", value=before.clean_content, inline=False)
 
-        if content:
-            emb.add_field(name="Content", value=content, inline=False)
+        if before.attachments:
+            for attachment in before.attachments:
+                if str(attachment.content_type).startswith("image/"):
+                    extension = str(attachment.filename).split(".")[-1]
+                    f = open(f"data/images/{before.guild.id}_{before.id}_{before.id}.{extension}", "rb")
+                    file = discord.File(f)
         emb.add_field(name="Channel", value=kwargs["before"].channel.mention, inline=False)
+        return file
 
     async def fmt_msg_edit(self, emb: discord.Embed, kwargs: dict):
+        if kwargs["after"].edited_at is None:
+            # misfire due to attachment
+            return None
+
         emb.title = f"{self.emoji['edit']} Message Edited"
         emb.description = f"{self.emoji['link']}[**Jump To Message**]({kwargs['after'].jump_url})"
         emb.add_field(
@@ -235,9 +254,51 @@ class ModLog(commands.Cog):
 
     # endregion: formatters
 
+    @staticmethod
+    def compress_image(filename: str):
+        """Compresses an image, intended to be used inside a thread"""
+        image = Image.open(filename)
+
+        if image.size[0] > 1920:
+            # we dont want to save huge images, so downscale all images to be smaller than X-1920
+            resize_factor = image.size[0] / 1920
+            image = image.resize(
+                (int(image.size[0] / resize_factor), int(image.size[1] / resize_factor)), Image.BICUBIC
+            )
+        elif image.size[1] > 1920:
+            # catch images that are rotated and huge
+            resize_factor = image.size[1] / 1920
+            image = image.resize(
+                (int(image.size[0] / resize_factor), int(image.size[1] / resize_factor)), Image.BICUBIC
+            )
+
+        # we dont want to ever be without a saved image, so create a temporary file and replace the original after compression
+        tempName = filename.replace("data/images/", "data/images/TEMP")
+        image.save(tempName, optimize=True, quality=85)
+        os.replace(tempName, filename)
+
     # region: events
-    async def on_message(self, message):
-        pass
+    async def on_message(self, message: discord.Message):
+        """Handles storage of images for display when their message is deleted"""
+        if message.attachments is not None:
+            for attachment in message.attachments:
+                attachment: discord.Attachment
+                if str(attachment.content_type).startswith("image/"):
+                    # attachment is an image
+                    if not os.path.exists("data/images"):
+                        os.makedirs("data/images", exist_ok=True)
+                    extension = str(attachment.filename).split(".")[-1]
+
+                    f = open(f"data/images/{message.guild.id}_{message.id}_{attachment.id}.{extension}", "wb")
+                    try:
+                        await attachment.save(f)
+                    except discord.HTTPException or discord.NotFound:
+                        return
+                    f.close()
+                    await asyncio.to_thread(
+                        self.compress_image,
+                        f"data/images/{message.guild.id}_{message.id}_{attachment.id}.{extension}",
+                    )
 
     async def on_message_edit(self, before, after):
         if before.author != self.bot.user:

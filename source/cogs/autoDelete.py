@@ -41,6 +41,7 @@ class AutoDelete(commands.Cog):
             log.spam("Running delete task...")
 
             for guild in self.bot.guilds:
+                # get guild data and determine if this server is using auto delete
                 guild_data = await self.bot.get_guild_data(guild.id)
                 if guild_data:
                     auto_del_data = guild_data.auto_delete_data
@@ -59,24 +60,19 @@ class AutoDelete(commands.Cog):
                                 if message_age.total_seconds() >= int(channel_data["delete_after"]) * 60:
                                     messages_to_delete[message.id] = message
                                     if len(messages_to_delete) >= 200:
+                                        # to avoid api spamming, i only want to delete in batches of 200 at most
                                         break
                             if len(messages_to_delete) != 0:
-                                messages_to_delete_output = list(messages_to_delete.values())
-                                if len(messages_to_delete_output) > 100:
-                                    # bulk delete can only take 100 messages at a time, so if we have over 100 messages
-                                    # split the list, and send 2 calls
-                                    one = messages_to_delete_output[:100]
-                                    two = [msg for msg in messages_to_delete_output if msg not in one]
-
-                                    print(len(one))
-                                    print(len(two))
-
-                                    await channel.delete_messages(one)
-                                    await channel.delete_messages(two)
-                                else:
-                                    await channel.delete_messages(messages_to_delete_output)
-
-                                log.spam(f"Deleted {len(messages_to_delete_output)} messages")
+                                messages_to_delete = list(messages_to_delete.values())
+                                # bulk delete can only take 100 messages at a time,
+                                # so we chunk the deletions into batches of 100 or less
+                                message_chunk = []
+                                for i, msg in enumerate(messages_to_delete):
+                                    message_chunk.append(msg)
+                                    if len(message_chunk) == 100 or i == len(messages_to_delete) - 1:
+                                        await channel.delete_messages(message_chunk)
+                                        message_chunk = []
+                                log.spam(f"Deleted {len(messages_to_delete)} messages")
 
                 await asyncio.sleep(0)
         except Exception as e:

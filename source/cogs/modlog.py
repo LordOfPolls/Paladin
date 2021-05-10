@@ -99,7 +99,7 @@ class ModLog(commands.Cog):
             for attachment in before.attachments:
                 if str(attachment.content_type).startswith("image/"):
                     extension = str(attachment.filename).split(".")[-1]
-                    f = open(f"data/images/{before.guild.id}_{before.id}_{before.id}.{extension}", "rb")
+                    f = open(f"data/images/{before.guild.id}_{before.id}_{attachment.id}.{extension}", "rb")
                     file = discord.File(f)
         emb.add_field(name="Channel", value=kwargs["before"].channel.mention, inline=False)
         return file
@@ -295,10 +295,12 @@ class ModLog(commands.Cog):
                     except discord.HTTPException or discord.NotFound:
                         return
                     f.close()
-                    await asyncio.to_thread(
-                        self.compress_image,
-                        f"data/images/{message.guild.id}_{message.id}_{attachment.id}.{extension}",
-                    )
+
+                    if extension not in ["gif"]:
+                        await asyncio.to_thread(
+                            self.compress_image,
+                            f"data/images/{message.guild.id}_{message.id}_{attachment.id}.{extension}",
+                        )
 
     async def on_message_edit(self, before, after):
         if before.author != self.bot.user:

@@ -5,7 +5,7 @@ from datetime import datetime
 import discord
 from discord_slash import cog_ext
 
-from source import utilities, dataclass
+from source import utilities, dataclass, shared
 from source.shared import *
 
 log: logging.Logger = utilities.getLog("Cog::Log")
@@ -20,21 +20,6 @@ class ModLog(commands.Cog):
         self.slash = bot.slash
 
         self.emoji = bot.emoji_list
-
-    async def _send_with_webhook(self, channel: discord.TextChannel, embed: discord.Embed):
-        """Sends content as a webhook"""
-        for _hook in await channel.guild.webhooks():
-            if "Paladin Log":
-                hook: discord.Webhook = _hook
-                break
-        else:
-            hook: discord.Webhook = await channel.create_webhook(name="Paladin Log")
-
-        await hook.send(
-            embed=embed,
-            allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=False),
-            avatar_url=channel.guild.icon_url,
-        )
 
     async def setup(self):
         """The startup tasks for this cog"""
@@ -86,7 +71,7 @@ class ModLog(commands.Cog):
             # catches un-handled events
             return log.error(f"Uncaught event: {event}")
 
-        await self._send_with_webhook(output_channel, emb)
+        await shared.send_with_webhook("Moderation Log", output_channel, emb)
 
     # region: formatters
     async def fmt_msg_delete(self, emb: discord.Embed, kwargs: dict):

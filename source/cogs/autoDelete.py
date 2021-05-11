@@ -146,7 +146,7 @@ class AutoDelete(commands.Cog):
             auto_del_data[index] = data
         else:
             data: dict = del_channel_template[0].copy()
-            data["channel_id"] = str(ctx.channel_id)
+            data["channel_id"] = str(channel.id)
             data["delete_after"] = time
             auto_del_data.append(data)
 

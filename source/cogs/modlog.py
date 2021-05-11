@@ -258,23 +258,24 @@ class ModLog(commands.Cog):
     def compress_image(filename: str):
         """Compresses an image, intended to be used inside a thread"""
         image = Image.open(filename)
-
-        if image.size[0] > 1920:
+        max_size = 1920
+        if image.size[0] > max_size:
             # we dont want to save huge images, so downscale all images to be smaller than X-1920
-            resize_factor = image.size[0] / 1920
+            resize_factor = image.size[0] / max_size
             image = image.resize(
-                (int(image.size[0] / resize_factor), int(image.size[1] / resize_factor)), Image.BICUBIC
+                (int(image.size[0] / resize_factor), int(image.size[1] / resize_factor)), Image.ANTIALIAS
             )
-        elif image.size[1] > 1920:
+        elif image.size[1] > max_size:
             # catch images that are rotated and huge
-            resize_factor = image.size[1] / 1920
+            resize_factor = image.size[1] / max_size
             image = image.resize(
-                (int(image.size[0] / resize_factor), int(image.size[1] / resize_factor)), Image.BICUBIC
+                (int(image.size[0] / resize_factor), int(image.size[1] / resize_factor)), Image.ANTIALIAS
             )
 
         # we dont want to ever be without a saved image, so create a temporary file and replace the original after compression
         tempName = filename.replace("data/images/", "data/images/TEMP")
-        image.save(tempName, optimize=True, quality=85)
+        image.save(tempName, optimize=True, quality=60)
+        image.close()
         os.replace(tempName, filename)
 
     # region: events

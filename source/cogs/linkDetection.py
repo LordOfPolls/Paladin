@@ -9,7 +9,7 @@ from discord_slash.utils import manage_commands
 
 from source import utilities, dataclass, shared
 
-log: logging.Logger = utilities.getLog("Cog::ActLog")
+log: logging.Logger = utilities.getLog("Cog::LinkDetect")
 
 
 class LinkDetection(commands.Cog):
@@ -21,12 +21,6 @@ class LinkDetection(commands.Cog):
         self.emoji = bot.emoji_list
 
         self.bot.add_listener(self.on_message, "on_message")
-        self.allowed_guilds = [
-            613425648685547541,  # Discord Developers
-            789032594456576001,  # Discord Py Slash Commands,
-            336642139381301249,  # dpy
-            197038439483310086,  # discord testers
-        ]
 
     async def on_message(self, message: discord.Message):
         if message.author.id == self.bot.user.id:
@@ -166,7 +160,7 @@ class LinkDetection(commands.Cog):
         ],
     )
     @commands.has_permissions(manage_messages=True)
-    async def block_bot_invites(self, ctx: SlashContext, toggle):
+    async def block_guild_invites(self, ctx: SlashContext, toggle):
         await ctx.defer()
         guild_data = await self.bot.get_guild_data(ctx.guild_id)
 
@@ -186,7 +180,7 @@ class LinkDetection(commands.Cog):
         ],
     )
     @commands.has_permissions(manage_messages=True)
-    async def block_bot_invites(self, ctx: SlashContext, toggle):
+    async def log_links(self, ctx: SlashContext, toggle):
         await ctx.defer()
         guild_data = await self.bot.get_guild_data(ctx.guild_id)
 

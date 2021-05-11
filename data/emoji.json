@@ -44,5 +44,7 @@
   "unread": "<:unread:825423191610490880>",
   "video": "<:video:825423191513890847>",
   "voice": "<:voice:825423191567630397>",
-  "voiceLocked": "<:voicelocked:825423191379542031>"
+  "voiceLocked": "<:voicelocked:825423191379542031>",
+  "checkMark": "<:checkMark:841644123898380288>",
+  "crossMark": "<:crossMark:841644123878326302>"
 }

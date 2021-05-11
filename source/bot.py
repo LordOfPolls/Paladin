@@ -61,14 +61,15 @@ async def startupTasks():
     bot.appInfo = await bot.application_info()
     bot.startTime = datetime.now()
 
-    log.info("Running cog setup tasks")
-    for cog in bot.cogs:
-        _c = bot.get_cog(cog)
-        try:
-            if hasattr(_c, "setup"):
-                await _c.setup()
-        except Exception as e:
-            log.error("".join(traceback.format_exception(type(e), e, e.__traceback__)))
+    async with asyncio.Lock():
+        log.info("Running cog setup tasks")
+        for cog in bot.cogs:
+            _c = bot.get_cog(cog)
+            try:
+                if hasattr(_c, "setup"):
+                    await _c.setup()
+            except Exception as e:
+                log.error("".join(traceback.format_exception(type(e), e, e.__traceback__)))
     bot.paladinEvents.process = True
     bot.paladinEvents.task = asyncio.create_task(bot.paladinEvents.event_loop())
 

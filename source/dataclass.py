@@ -61,6 +61,9 @@ class Guild:
         # [{"channel_id": 11111111111111, "delete_after": 100},]
         self.auto_delete_data: list = []
 
+        # [channelID]
+        self.vote_channel_data: list = []
+
     @property
     def key(self):
         """The key for this user in the redis db"""
@@ -68,7 +71,7 @@ class Guild:
 
     def to_json(self):
         """Dump this object to json ready for push to redis"""
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=0)
+        return json.dumps(self.__dict__, sort_keys=True, indent=0)
 
     def load_from_dict(self, raw_data: dict):
         """Load values from a dict"""

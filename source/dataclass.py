@@ -64,6 +64,12 @@ class Guild:
         # [channelID]
         self.vote_channel_data: list = []
 
+        self.block_guild_invites: bool = False
+        self.block_bot_invites: bool = False
+        self.log_urls: bool = False
+
+        self.allowed_guild_invites: list = []
+
     @property
     def key(self):
         """The key for this user in the redis db"""

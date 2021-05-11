@@ -32,6 +32,7 @@ bot = dataclass.Bot(
         "source.cogs.listPermissions",
         "source.cogs.autoDelete",
         "source.cogs.voteChannel",
+        "source.cogs.linkDetection",
     ],
     help_command=None,
     sync_commands=False,

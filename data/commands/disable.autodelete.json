@@ -1,6 +1,6 @@
 {
   "decorator": {
-    "name": "disable",
+    "name": "auto-delete",
     "description": "Disable auto delete",
     "options": [
       {
@@ -12,6 +12,6 @@
       }
     ],
     "guild_ids": null,
-    "base": "autodelete"
+    "base": "clear-channel"
   }
 }

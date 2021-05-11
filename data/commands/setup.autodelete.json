@@ -1,6 +1,6 @@
 {
   "decorator": {
-    "name": "setup",
+    "name": "auto-delete",
     "description": "Setup auto-delete",
     "options": [
       {
@@ -39,6 +39,6 @@
       }
     ],
     "guild_ids": null,
-    "base": "autodelete"
+    "base": "set-channel"
   }
 }

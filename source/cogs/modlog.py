@@ -340,9 +340,8 @@ class ModLog(commands.Cog):
     # endregion: events
 
     @cog_ext.cog_subcommand(
-        base="log",
-        subcommand_group="moderation",
-        name="set-channel",
+        base="set-channel",
+        name="moderation",
         description="Set the channel for moderation event logging",
         options=[
             manage_commands.create_option(
@@ -364,9 +363,8 @@ class ModLog(commands.Cog):
         await ctx.send(f"Set moderation log channel to {channel.mention}", hidden=True)
 
     @cog_ext.cog_subcommand(
-        base="log",
-        subcommand_group="moderation",
-        name="clear-channel",
+        base="clear-channel",
+        name="moderation",
         description="Clear the set channel for moderation logs (disables it)",
     )
     async def _clear_channel(self, ctx):

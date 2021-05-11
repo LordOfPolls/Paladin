@@ -220,9 +220,8 @@ class LogAction(commands.Cog):
         await ctx.send(f"Your reason has been stored for action #{id}")
 
     @cog_ext.cog_subcommand(
-        base="log",
-        subcommand_group="action",
-        name="set-channel",
+        base="set-channel",
+        name="action",
         description="Set the channel for action logging",
         options=[
             manage_commands.create_option(
@@ -244,9 +243,8 @@ class LogAction(commands.Cog):
         await ctx.send(f"Set action log channel to {channel.mention}", hidden=True)
 
     @cog_ext.cog_subcommand(
-        base="log",
-        subcommand_group="action",
-        name="clear-channel",
+        base="clear-channel",
+        name="action",
         description="Clear the set channel for action logs (disables it)",
     )
     async def _clear_channel(self, ctx):

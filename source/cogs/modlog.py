@@ -99,8 +99,9 @@ class ModLog(commands.Cog):
             for attachment in before.attachments:
                 if str(attachment.content_type).startswith("image/"):
                     extension = str(attachment.filename).split(".")[-1]
-                    f = open(f"data/images/{before.guild.id}_{before.id}_{attachment.id}.{extension}", "rb")
-                    file = discord.File(f)
+                    if os.path.exists(f"data/images/{before.guild.id}_{before.id}_{attachment.id}.{extension}"):
+                        f = open(f"data/images/{before.guild.id}_{before.id}_{attachment.id}.{extension}", "rb")
+                        file = discord.File(f)
         emb.add_field(name="Channel", value=kwargs["before"].channel.mention, inline=False)
         return file
 
@@ -381,11 +382,11 @@ class ModLog(commands.Cog):
 def setup(bot):
     """Called when this cog is mounted"""
     bot.add_cog(ModLog(bot))
-    log.info("Modlog mounted")
+    log.info("ModLog mounted")
 
 
 def teardown(bot):
     """Called when this cog is unmounted"""
-    log.warning("Mail un-mounted")
+    log.warning("ModLog un-mounted")
     for handler in log.handlers[:]:
         log.removeHandler(handler)

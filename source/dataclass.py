@@ -70,6 +70,7 @@ class Guild:
         self.block_guild_invites: bool = False
         self.block_bot_invites: bool = False
         self.log_urls: bool = False
+        self.store_images: bool = False
 
         self.allowed_guild_invites: list = []
 

@@ -287,22 +287,25 @@ class ModLog(commands.Cog):
                 attachment: discord.Attachment
                 if str(attachment.content_type).startswith("image/"):
                     # attachment is an image
-                    if not os.path.exists("data/images"):
-                        os.makedirs("data/images", exist_ok=True)
-                    extension = str(attachment.filename).split(".")[-1]
 
-                    f = open(f"data/images/{message.guild.id}_{message.id}_{attachment.id}.{extension}", "wb")
-                    try:
-                        await attachment.save(f)
-                    except discord.HTTPException or discord.NotFound:
-                        return
-                    f.close()
+                    guild_data = await self.bot.get_guild_data(message.guild.id)
+                    if guild_data.store_images:
+                        if not os.path.exists("data/images"):
+                            os.makedirs("data/images", exist_ok=True)
+                        extension = str(attachment.filename).split(".")[-1]
 
-                    if extension not in ["gif"]:
-                        await asyncio.to_thread(
-                            self.compress_image,
-                            f"data/images/{message.guild.id}_{message.id}_{attachment.id}.{extension}",
-                        )
+                        f = open(f"data/images/{message.guild.id}_{message.id}_{attachment.id}.{extension}", "wb")
+                        try:
+                            await attachment.save(f)
+                        except discord.HTTPException or discord.NotFound:
+                            return
+                        f.close()
+
+                        if extension not in ["gif"]:
+                            await asyncio.to_thread(
+                                self.compress_image,
+                                f"data/images/{message.guild.id}_{message.id}_{attachment.id}.{extension}",
+                            )
 
     async def on_message_edit(self, before, after):
         if before.author != self.bot.user:
@@ -377,6 +380,26 @@ class ModLog(commands.Cog):
         await self.bot.redis.set(guild_data.key, guild_data.to_json())
 
         await ctx.send(f"Disabled moderation logging")
+
+    @cog_ext.cog_subcommand(
+        base="log",
+        name="images",
+        description="Log images to be sent in the log upon their deletion by the user",
+        options=[
+            manage_commands.create_option(
+                name="toggle", description="Enable or disable this feature", option_type=5, required=True
+            )
+        ],
+        base_default_permission=False,
+    )
+    async def log_images(self, ctx: SlashContext, toggle):
+        await ctx.defer()
+        guild_data = await self.bot.get_guild_data(ctx.guild_id)
+
+        guild_data.store_images = toggle
+
+        await self.bot.redis.set(guild_data.key, guild_data.to_json())
+        await ctx.send(f"Images are now being {'logged' if toggle else 'ignored'}")
 
 
 def setup(bot):

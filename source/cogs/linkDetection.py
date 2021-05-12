@@ -140,7 +140,6 @@ class LinkDetection(commands.Cog):
         ],
         base_default_permission=False,
     )
-    @commands.has_permissions(manage_messages=True)
     async def block_bot_invites(self, ctx: SlashContext, toggle):
         await ctx.defer()
         guild_data = await self.bot.get_guild_data(ctx.guild_id)
@@ -161,7 +160,6 @@ class LinkDetection(commands.Cog):
         ],
         base_default_permission=False,
     )
-    @commands.has_permissions(manage_messages=True)
     async def block_guild_invites(self, ctx: SlashContext, toggle):
         await ctx.defer()
         guild_data = await self.bot.get_guild_data(ctx.guild_id)
@@ -182,7 +180,6 @@ class LinkDetection(commands.Cog):
         ],
         base_default_permission=False,
     )
-    @commands.has_permissions(manage_messages=True)
     async def log_links(self, ctx: SlashContext, toggle):
         await ctx.defer()
         guild_data = await self.bot.get_guild_data(ctx.guild_id)

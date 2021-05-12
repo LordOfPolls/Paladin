@@ -230,7 +230,6 @@ class LogAction(commands.Cog):
         ],
         base_default_permission=False,
     )
-    @commands.has_permissions(manage_messages=True)
     async def _set_channel(self, ctx: SlashContext, channel: discord.TextChannel):
         if not isinstance(channel, discord.TextChannel):
             return await ctx.send("Sorry, logs can only be sent to a text channel")
@@ -250,7 +249,6 @@ class LogAction(commands.Cog):
         description="Clear the set channel for action logs (disables it)",
         base_default_permission=False,
     )
-    @commands.has_permissions(manage_messages=True)
     async def _clear_channel(self, ctx):
         await ctx.defer()
         guild_data = await self.bot.get_guild_data(ctx.guild_id)

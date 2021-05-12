@@ -19,7 +19,6 @@ class UserWarnings(commands.Cog):
         self.emoji = bot.emoji_list
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("add.warn.user"))
-    @shared.check_is_moderator()
     async def warnCMD(
         self,
         ctx: SlashContext,
@@ -92,7 +91,6 @@ class UserWarnings(commands.Cog):
         await self.bot.redis.set(user_data.key, user_data.to_json())
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("clear.warn.user"))
-    @shared.check_is_moderator()
     async def warnClearCMD(
         self,
         ctx: SlashContext,

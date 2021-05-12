@@ -79,7 +79,6 @@ class AutoDelete(commands.Cog):
             log.error("".join(traceback.format_exception(type(e), e, e.__traceback__)))
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("disable.autodelete"))
-    @commands.has_permissions(manage_messages=True)
     async def disable_cmd(self, ctx: SlashContext, channel: discord.TextChannel = None):
         await ctx.defer(hidden=True)
 
@@ -107,7 +106,6 @@ class AutoDelete(commands.Cog):
         await ctx.send(f"Got it, auto-deletion has been disabled in {channel.mention}", hidden=True)
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("setup.autodelete"))
-    @commands.has_permissions(manage_messages=True)
     async def setup_cmd(self, ctx: SlashContext, time: int, unit: int, channel: discord.TextChannel = None):
         await ctx.defer(hidden=True)
 

@@ -20,7 +20,6 @@ class BaseModeration(commands.Cog):
         self.emoji = bot.emoji_list
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("purge.messages"))
-    @commands.has_permissions(manage_messages=True)
     async def purge(
         self,
         ctx: SlashContext,
@@ -90,7 +89,6 @@ class BaseModeration(commands.Cog):
         )
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("add.user"))
-    @commands.has_permissions(manage_roles=True)
     async def giveRole(
         self,
         ctx: SlashContext,
@@ -125,7 +123,6 @@ class BaseModeration(commands.Cog):
         )
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("remove.user"))
-    @commands.has_permissions(manage_roles=True)
     async def removeRole(
         self,
         ctx: SlashContext,
@@ -160,7 +157,6 @@ class BaseModeration(commands.Cog):
         )
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("kick.user"))
-    @commands.has_permissions(kick_members=True)
     async def kick(
         self,
         ctx: SlashContext,
@@ -184,7 +180,6 @@ class BaseModeration(commands.Cog):
         )
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("ban.user"))
-    @commands.has_permissions(ban_members=True)
     async def ban(
         self,
         ctx: SlashContext,

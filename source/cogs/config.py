@@ -39,6 +39,16 @@ class Config(commands.Cog):
         emb.set_thumbnail(url=ctx.guild.icon_url)
 
         # config data
+        mod_roles = []
+        if guild_data.moderation_roles:
+            for role_id in guild_data.moderation_roles:
+                role = ctx.guild.get_role(role_id)
+                if role:
+                    mod_roles.append(f"{role.mention}")
+        if mod_roles:
+            emb.add_field(name="Moderation Roles", value="\n".join(mod_roles), inline=False)
+        else:
+            emb.add_field(name="Moderation Roles", value="None Set")
 
         mute_role = ctx.guild.get_role(guild_data.role_mute_id)
         emb.add_field(name="Mute Role", value=mute_role.mention if mute_role else "None Set", inline=False)
@@ -84,6 +94,11 @@ class Config(commands.Cog):
         emb.add_field(
             name="Log URLs",
             value=self.emoji["checkMark"] if guild_data.log_urls else self.emoji["crossMark"],
+            inline=False,
+        )
+        emb.add_field(
+            name="Log Images",
+            value=self.emoji["checkMark"] if guild_data.store_images else self.emoji["crossMark"],
             inline=False,
         )
 

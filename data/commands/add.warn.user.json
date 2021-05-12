@@ -2,6 +2,7 @@
   "decorator": {
     "name": "add",
     "description": "Warn a user - 3 warnings = Kick",
+    "base_default_permission": false,
     "options": [
       {
         "name": "user",

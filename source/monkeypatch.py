@@ -42,7 +42,7 @@ def monkeypatched_SlashCommand(*args, **kwargs) -> discord_slash.SlashCommand:
 
         log.debug("Patching model.CogCommandObject...")
         # Cooldown / max concurrency support
-        discord_slash.model.CogCommandObject.invoke = invoke
+        discord_slash.model.CogBaseCommandObject.invoke = invoke
 
         log.debug("Patching model.CogSubcommandObject...")
         # Cooldown / max concurrency support

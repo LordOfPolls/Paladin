@@ -1,7 +1,8 @@
 {
   "decorator": {
     "name": "remove",
-    "description": "Give a user a role",
+    "description": "Remove a users role",
+    "base_default_permission": false,
     "options": [
       {
         "name": "role",

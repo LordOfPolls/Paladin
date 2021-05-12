@@ -1,5 +1,6 @@
 import logging
 import re
+import traceback
 import typing
 
 import discord
@@ -24,7 +25,7 @@ class LinkDetection(commands.Cog):
         base="guild",
         name="get_config",
         description="Show the current config for this server",
-        guild_ids=[701347683591389185],
+        base_default_permission=True,
     )
     async def get_guild_config(self, ctx: SlashContext):
         await ctx.defer()
@@ -94,6 +95,74 @@ class LinkDetection(commands.Cog):
             )
 
         await ctx.send(embed=emb)
+
+    @cog_ext.cog_subcommand(
+        base="guild",
+        name="enable_commands",
+        description="Enable commands for a specified role",
+        options=[
+            manage_commands.create_option(name="role", description="The role in question", option_type=8, required=True)
+        ],
+        base_default_permission=True,
+    )
+    @commands.cooldown(1, 60, commands.BucketType.guild)
+    @commands.has_permissions(administrator=True)
+    async def enable_commands(self, ctx: SlashContext, role: discord.Role):
+        await ctx.defer()
+        guild_data = await self.bot.get_guild_data(ctx.guild_id)
+        if guild_data:
+            if role.id in guild_data.moderation_roles:
+                return await ctx.send(
+                    "Commands are already enabled for that role, if they aren't in Discord, try restarting Discord"
+                )
+
+            guild_data.moderation_roles.append(role.id)
+            await self.bot.redis.set(guild_data.key, guild_data.to_json())
+            await self.bot.add_permissions_to_commands(True)
+
+            await ctx.send(
+                f"Commands are now enabled for {role.mention}\n**Note:**It may take a few minutes for discord to show this change",
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+
+    @cog_ext.cog_subcommand(
+        base="guild",
+        name="disable_commands",
+        description="Disable commands for a specified role",
+        options=[
+            manage_commands.create_option(name="role", description="The role in question", option_type=8, required=True)
+        ],
+        base_default_permission=True,
+    )
+    @commands.cooldown(1, 60, commands.BucketType.guild)
+    @commands.has_permissions(administrator=True)
+    async def disable_commands(self, ctx: SlashContext, role: discord.Role):
+        await ctx.defer()
+        guild_data = await self.bot.get_guild_data(ctx.guild_id)
+        if guild_data:
+            if role.id not in guild_data.moderation_roles:
+                return await ctx.send(
+                    "Commands are already disabled for that role, if they aren't in Discord, try restarting Discord"
+                )
+            guild_data.moderation_roles.remove(role.id)
+            await self.bot.redis.set(guild_data.key, guild_data.to_json())
+            await self.bot.add_permissions_to_commands(True)
+
+            await ctx.send(
+                f"Commands are now disabled for {role.mention}\n**Note:**It may take a few minutes for discord to show this change",
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+
+    @enable_commands.error
+    @disable_commands.error
+    async def on_error(self, ctx, error):
+        if isinstance(error, commands.CheckFailure):
+            await ctx.send("You need administrator permissions to use this command", hidden=True)
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.send("Sorry, you can only use this command once per minute", hidden=True)
+        else:
+            log.error("".join(traceback.format_exception(type(error), error, error.__traceback__)))
+            await ctx.send("An error occurred trying to run this command, it has been logged. Please try again later")
 
 
 def setup(bot):

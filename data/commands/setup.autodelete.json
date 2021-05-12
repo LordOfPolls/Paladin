@@ -2,6 +2,7 @@
   "decorator": {
     "name": "auto-delete",
     "description": "Setup auto-delete",
+    "base_default_permission": false,
     "options": [
       {
         "name": "time",

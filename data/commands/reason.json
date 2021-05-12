@@ -2,6 +2,7 @@
   "decorator": {
     "name": "reason",
     "description": "Add a reason to an action",
+    "default_permission": false,
     "options": [
       {
         "name": "id",

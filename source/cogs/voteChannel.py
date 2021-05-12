@@ -63,6 +63,7 @@ class VoteChannel(commands.Cog):
                 required=False,
             )
         ],
+        base_default_permission=False,
     )
     @commands.has_permissions(manage_messages=True)
     async def _set_channel(self, ctx: SlashContext, channel: discord.TextChannel = None):
@@ -99,6 +100,7 @@ class VoteChannel(commands.Cog):
                 required=False,
             )
         ],
+        base_default_permission=False,
     )
     @commands.has_permissions(manage_messages=True)
     async def _clear_channel(self, ctx, channel: discord.TextChannel = None):

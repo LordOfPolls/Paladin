@@ -2,6 +2,7 @@
   "decorator": {
     "name": "setrole",
     "description": "Set your servers mute role",
+    "base_default_permission": false,
     "options": [
       {
         "name": "role",

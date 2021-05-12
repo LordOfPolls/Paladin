@@ -1,9 +1,11 @@
 import asyncio
+import copy
 import json
 import logging
 import subprocess
 import typing
 from datetime import datetime, timedelta
+from pprint import pprint
 
 import discord
 import discord_slash
@@ -11,6 +13,7 @@ import redis
 import toml
 from discord.ext import commands
 from discord_slash import SlashContext
+from discord_slash.utils import manage_commands
 
 from source import events, monkeypatch, utilities
 
@@ -69,6 +72,9 @@ class Guild:
         self.log_urls: bool = False
 
         self.allowed_guild_invites: list = []
+
+        # a list of roles that can use moderation commands
+        self.moderation_roles: list = []
 
     @property
     def key(self):
@@ -208,6 +214,7 @@ class Bot(commands.Bot):
         self.slash: discord_slash.SlashCommand = monkeypatch.monkeypatched_SlashCommand(
             self, sync_commands=False if "sync_commands" not in kwargs else kwargs["sync_commands"]
         )
+        # self.slash = discord_slash.SlashCommand(self, sync_commands=False)
         """The slash command system"""
 
     async def is_in_guild(self, ctx: SlashContext):
@@ -249,6 +256,24 @@ class Bot(commands.Bot):
             data.load_from_dict(raw_data)
 
         return data
+
+    async def add_permissions_to_commands(self, sync=False):
+        perms_data = {}
+        for guild in self.guilds:
+            perms_data[guild.id] = []
+
+            guild_data = await self.get_guild_data(guild.id)
+            for role_id in guild_data.moderation_roles:
+                perms_data[guild.id].append(manage_commands.create_permission(role_id, 1, True))
+
+        _temp = copy.copy(self.slash.commands)
+        for command in _temp.keys():
+            if not self.slash.commands[command].default_permission:
+                self.slash.commands[command].permissions = perms_data
+            else:
+                self.slash.commands[command].permissions = []
+        if sync:
+            await self.slash.sync_all_commands()
 
     async def close(self):
         """Close the connection to discord"""

@@ -2,6 +2,7 @@
   "decorator": {
     "name": "kick",
     "description": "Kick a user",
+    "base_default_permission": false,
     "options": [
       {
         "name": "user",

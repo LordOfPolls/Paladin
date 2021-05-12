@@ -2,6 +2,7 @@
   "decorator": {
     "name": "auto-delete",
     "description": "Disable auto delete",
+    "base_default_permission": false,
     "options": [
       {
         "name": "channel",

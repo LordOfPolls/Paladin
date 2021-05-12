@@ -2,6 +2,7 @@
   "decorator": {
     "name": "ban",
     "description": "Ban a user",
+    "base_default_permission": false,
     "options": [
       {
         "name": "user",

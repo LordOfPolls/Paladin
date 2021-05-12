@@ -2,6 +2,7 @@
   "decorator": {
     "name": "clear",
     "description": "Mute the specified user",
+    "base_default_permission": false,
     "options": [
       {
         "name": "user",

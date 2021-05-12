@@ -348,6 +348,7 @@ class ModLog(commands.Cog):
                 name="channel", option_type=7, description="The channel to send to", required=True
             )
         ],
+        base_default_permission=False,
     )
     @commands.has_permissions(manage_messages=True)
     async def _set_channel(self, ctx: SlashContext, channel: discord.TextChannel):
@@ -367,6 +368,7 @@ class ModLog(commands.Cog):
         base="clear-channel",
         name="moderation",
         description="Clear the set channel for moderation logs (disables it)",
+        base_default_permission=False,
     )
     @commands.has_permissions(manage_messages=True)
     async def _clear_channel(self, ctx):

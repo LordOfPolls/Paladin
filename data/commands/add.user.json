@@ -2,6 +2,7 @@
   "decorator": {
     "name": "add",
     "description": "Give a user a role",
+    "base_default_permission": false,
     "options": [
       {
         "name": "role",

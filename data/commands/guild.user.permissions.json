@@ -2,6 +2,7 @@
   "decorator": {
     "name": "guild",
     "description": "Get guild permissions for a specified user",
+    "base_default_permission": false,
     "options": [
       {
         "name": "user",

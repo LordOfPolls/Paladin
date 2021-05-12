@@ -138,6 +138,7 @@ class LinkDetection(commands.Cog):
                 name="toggle", description="Enable or disable this feature", option_type=5, required=True
             )
         ],
+        base_default_permission=False,
     )
     @commands.has_permissions(manage_messages=True)
     async def block_bot_invites(self, ctx: SlashContext, toggle):
@@ -158,6 +159,7 @@ class LinkDetection(commands.Cog):
                 name="toggle", description="Enable or disable this feature", option_type=5, required=True
             )
         ],
+        base_default_permission=False,
     )
     @commands.has_permissions(manage_messages=True)
     async def block_guild_invites(self, ctx: SlashContext, toggle):
@@ -178,6 +180,7 @@ class LinkDetection(commands.Cog):
                 name="toggle", description="Enable or disable this feature", option_type=5, required=True
             )
         ],
+        base_default_permission=False,
     )
     @commands.has_permissions(manage_messages=True)
     async def log_links(self, ctx: SlashContext, toggle):
@@ -208,6 +211,7 @@ class LinkDetection(commands.Cog):
                 ],
             ),
         ],
+        base_default_permission=False,
     )
     async def guild_exception(self, ctx: SlashContext, guild: int, add_or_remove: str):
         await ctx.defer()

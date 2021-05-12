@@ -2,6 +2,7 @@
   "decorator": {
     "name": "channel",
     "description": "Get channel overrides for a user",
+    "base_default_permission": false,
     "options": [
       {
         "name": "user",

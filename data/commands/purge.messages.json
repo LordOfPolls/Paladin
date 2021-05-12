@@ -2,6 +2,7 @@
   "decorator": {
     "name": "purge",
     "description": "Purge messages from this channel",
+    "base_default_permission": false,
     "options": [
       {
         "name": "total",

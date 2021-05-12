@@ -2,6 +2,7 @@
   "decorator": {
     "name": "info",
     "description": "Get information about a user",
+    "base_default_permission": true,
     "options": [
       {
         "name": "user",

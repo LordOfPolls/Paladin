@@ -192,7 +192,7 @@ class Mute(commands.Cog):
     # region: commands
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("setrole.mute.user"))
-    @commands.max_concurrency(1, BucketType.guild, wait=False)
+    # @commands.max_concurrency(1, BucketType.guild, wait=False)
     @commands.check_any(
         commands.has_permissions(manage_messages=True),
         commands.has_permissions(manage_roles=True),

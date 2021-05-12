@@ -2,6 +2,7 @@
   "decorator": {
     "name": "clear",
     "description": "Clears all warnings from a user",
+    "base_default_permission": false,
     "options": [
       {
         "name": "user",

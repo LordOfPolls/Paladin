@@ -2,7 +2,7 @@
   "decorator": {
     "name": "guild",
     "description": "View all permissions a role has in your guild",
-    "base_default_permission": false,
+    "base_default_permission": true,
     "options": [
       {
         "name": "role",

@@ -2,7 +2,7 @@
   "decorator": {
     "name": "channel",
     "description": "Get override permissions for a role in this channel",
-    "base_default_permission": false,
+    "base_default_permission": true,
     "options": [
       {
         "name": "role",

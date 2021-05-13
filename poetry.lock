@@ -154,9 +154,9 @@ develop = false
 
 [package.source]
 type = "git"
-url = "https://github.com/benwoo1110/discord-py-slash-command.git"
-reference = "permissions"
-resolved_reference = "323db711805b5fc2e651b79a4482a582f18364d4"
+url = "https://github.com/eunwoo1104/discord-py-slash-command.git"
+reference = "master"
+resolved_reference = "00e563ca4326cb4d302b7175425225dc7cff899e"
 
 [[package]]
 name = "discord.py"
@@ -317,7 +317,7 @@ fuzzywuzzy = []
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "b0f5a77fae8c382dba0f47d2503e185ca0d1e704bcf6852ae814a47156afaf4f"
+content-hash = "e338267b9333d8032a6aed4a86d3c0f15663d5db48b09fe78784c550d772c870"
 
 [metadata.files]
 aiohttp = [

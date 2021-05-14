@@ -32,7 +32,7 @@ class Config(commands.Cog):
 
         guild_data = await self.bot.get_guild_data(ctx.guild_id)
 
-        emb = discord.Embed(title=f"{ctx.guild.name} Configuration", colour=discord.Colour.blurple())
+        emb = discord.Embed(title=f"{ctx.guild.name} Configuration", colour=shared.new_blurple)
 
         emb.add_field(name="ID", value=ctx.guild_id, inline=False)
         emb.add_field(name="Owner", value=ctx.guild.owner.mention, inline=False)

@@ -122,3 +122,6 @@ async def send_with_webhook(name: str, channel: discord.TextChannel, embed: disc
         avatar_url=channel.guild.icon_url,
         file=file,
     )
+
+
+new_blurple = discord.Colour(0x5865F2)

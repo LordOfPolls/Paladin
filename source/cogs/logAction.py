@@ -68,7 +68,7 @@ class LogAction(commands.Cog):
         else:
             return
 
-        emb = discord.Embed(colour=discord.Colour.blurple())
+        emb = discord.Embed(colour=new_blurple)
 
         token = await self._get_new_action_id(action.guild)
 

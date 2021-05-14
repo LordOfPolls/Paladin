@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord_slash import SlashContext, cog_ext
 from discord_slash.utils import manage_commands
 
-from source import utilities, pagination, jsonManager
+from source import utilities, pagination, jsonManager, shared
 
 log: logging.Logger = utilities.getLog("Cog::lsPerms")
 
@@ -72,7 +72,7 @@ class ListPermissions(commands.Cog):
         await self.paginator.paginate(
             data,
             ctx,
-            embed=discord.Embed(title=f"Guild Permissions For {mention.name}", colour=discord.Colour.blurple()),
+            embed=discord.Embed(title=f"Guild Permissions For {mention.name}", colour=shared.new_blurple),
             max_lines=10,
         )
 
@@ -90,9 +90,7 @@ class ListPermissions(commands.Cog):
         await self.paginator.paginate(
             data,
             ctx,
-            embed=discord.Embed(
-                title=f"Permissions For {mention.name} in {channel.name}", colour=discord.Colour.blurple()
-            ),
+            embed=discord.Embed(title=f"Permissions For {mention.name} in {channel.name}", colour=shared.new_blurple),
             max_lines=10,
         )
 

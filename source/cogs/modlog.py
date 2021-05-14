@@ -47,7 +47,7 @@ class ModLog(commands.Cog):
         else:
             return
 
-        emb = discord.Embed(colour=discord.Colour.blurple())
+        emb = discord.Embed(colour=new_blurple)
         file = None
 
         # todo: replace this ugliness with a match statement when 3.10 is fully released
@@ -73,7 +73,7 @@ class ModLog(commands.Cog):
             # catches un-handled events
             return log.error(f"Uncaught event: {event}")
 
-        if not emb == discord.Embed(colour=discord.Colour.blurple()):
+        if not emb == discord.Embed(colour=new_blurple):
             await shared.send_with_webhook("Moderation Log", output_channel, emb, file)
             if file:
                 file.fp.close()

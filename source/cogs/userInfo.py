@@ -24,7 +24,7 @@ class UserInfo(commands.Cog):
 
     @cog_ext.cog_subcommand(**jsonManager.getDecorator("info.user"))
     async def userInfo(self, ctx: SlashContext, user: typing.Union[discord.Member, discord.User]):
-        emb = discord.Embed(colour=discord.Colour.blurple())
+        emb = discord.Embed(colour=shared.new_blurple)
         emb.set_thumbnail(url=user.avatar_url)
         emb.description = ""
 

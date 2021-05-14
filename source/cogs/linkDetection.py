@@ -27,7 +27,7 @@ class LinkDetection(commands.Cog):
             return
 
         discord_invite = "discord.gg/(.*)"
-        bot_invite = "discord.com/oauth2/authorize\?client_id=(\d{18})"
+        bot_invite = "(discord|discordapp).com(api/|/)oauth2/authorize\?client_id=(\d{18})"
         generic_url = "((http|ftp|https)://|[\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])(.*)"
 
         if url := re.search(discord_invite, str(message.clean_content)):

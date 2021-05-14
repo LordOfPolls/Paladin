@@ -28,6 +28,8 @@ class BaseModeration(commands.Cog):
         channel: discord.TextChannel = None,
         reason: str = None,
     ):
+        if not isinstance(channel, discord.TextChannel):
+            return await ctx.send("Sorry you can only purge a text channel")
 
         totalDeleted = set()
 

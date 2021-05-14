@@ -7,8 +7,9 @@ from contextlib import redirect_stdout
 import aiohttp
 import discord
 from discord.ext import commands
+from discord_slash import cog_ext
 
-from source import utilities, dataclass
+from source import dataclass, utilities
 
 log: logging.Logger = utilities.getLog("Cog::base")
 
@@ -116,6 +117,13 @@ class Base(commands.Cog):
                     await ctx.message.reply("```py\n%s%s\n```" % (value, ret))
                 except:
                     await ctx.send("```py\n%s%s\n```" % (value, ret))
+
+    @cog_ext.cog_slash(name="invite", description="Get an invite link for the bot", default_permission=True)
+    async def _invite(self, ctx):
+        await ctx.send(
+            f"https://discord.com/oauth2/authorize?client_id={self.bot.user.id}"
+            f"&permissions=8&scope=applications.commands%20bot"
+        )
 
 
 def setup(bot):

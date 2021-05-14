@@ -30,15 +30,15 @@ class LinkDetection(commands.Cog):
         bot_invite = "(discord|discordapp).com(/api/|/)oauth2/authorize\?client_id=(\d{18})"
         generic_url = "((http|ftp|https)://|[\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])(.*)"
 
-        if url := re.search(discord_invite, str(message.clean_content)):
+        if url := re.search(discord_invite, str(message.clean_content).lower()):
             # discord link
             return await self.handle_guild_invite(message, url)
 
-        elif url := re.search(bot_invite, str(message.clean_content)):
+        elif url := re.search(bot_invite, str(message.clean_content).lower()):
             # bot invite
             return await self.handle_bot_invite(message, url)
 
-        elif url := re.search(generic_url, str(message.clean_content)):
+        elif url := re.search(generic_url, str(message.clean_content).lower()):
             # generic link
             return await self.handle_generic_url(message, url)
 

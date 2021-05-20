@@ -305,10 +305,6 @@ class Bot(commands.Bot):
             while not self.paladinEvents.task.done():
                 await asyncio.sleep(0)
 
-        # close db connection
-        self.db.dbPool.close()
-        await self.db.dbPool.wait_closed()
-
         if self._closed:
             return
 

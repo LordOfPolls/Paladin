@@ -264,6 +264,8 @@ class Bot(commands.Bot):
             perms_data[guild.id] = []
 
             guild_data = await self.get_guild_data(guild.id)
+            self.slash.perms_cache[guild.id] = guild_data.moderation_roles
+
             for role_id in guild_data.moderation_roles:
                 perms_data[guild.id].append(manage_commands.create_permission(role_id, 1, True))
 

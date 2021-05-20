@@ -4,6 +4,7 @@ import datetime
 import inspect
 import traceback
 
+import discord
 import discord_slash
 from discord.ext.commands import CooldownMapping, CommandOnCooldown
 from discord.utils import snowflake_time
@@ -58,6 +59,9 @@ def monkeypatched_SlashCommand(*args, **kwargs) -> discord_slash.SlashCommand:
         # Error decorator support and bug fix
         discord_slash.SlashCommand.invoke_command = slsh_invoke_command
 
+        # adding slash command perms cache
+        discord_slash.SlashCommand.perms_cache = {}
+
         log.info("Successfully patched discord_slash.SlashCommand")
         return discord_slash.SlashCommand(*args, **kwargs)
     except Exception as e:
@@ -111,11 +115,15 @@ async def slsh_invoke_command(self, func, ctx, args):
     :param args: Args. Can be list or dict.
     """
     try:
-        if isinstance(args, dict):
-            if await self._discord.is_in_guild(ctx):
-                await func.invoke(ctx, **args)
-        else:
-            await func.invoke(ctx, *args)
+        if await self._discord.is_in_guild(ctx):
+            # check user actually has perms to use this command
+            if check_perms(self, func, ctx):
+                if isinstance(args, dict):
+                    await func.invoke(ctx, **args)
+                else:
+                    await func.invoke(ctx, *args)
+            else:
+                return await ctx.send("Sorry, you do not have permission to use this command", hidden=True)
     except Exception as ex:
         if hasattr(func, "on_error"):
             # call error decorator
@@ -131,6 +139,27 @@ async def slsh_invoke_command(self, func, ctx, args):
             except Exception as e:
                 self.logger.error(f"{ctx.command}:: Error using error decorator: {e}")
         await self.on_slash_command_error(ctx, ex)
+
+
+def check_perms(slash: discord_slash.SlashCommand, func, ctx: discord_slash.SlashContext):
+    """Checks if the user invoking a command should actually have access
+    A discord exploit makes this necessary"""
+    if isinstance(func, discord_slash.model.CogSubcommandObject):
+        base_cmd: dict = func.base_command_data
+        if base_cmd.get("default_permission") is True:
+            return True
+    else:
+        if func.default_permission is True:
+            return True
+    # i dont use non-cog commands, so i cant be bothered to explicitly handle them
+
+    # check for role / user
+    if perms := slash.perms_cache.get(ctx.guild.id):
+        for role in ctx.author.roles:
+            role: discord.Role
+            if role.id in perms:
+                return True
+    return False
 
 
 # region Cooldown code

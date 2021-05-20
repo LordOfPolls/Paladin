@@ -10,7 +10,7 @@ from discord.ext import commands
 from discord_slash import SlashContext
 from discord_slash.utils import manage_commands
 
-from . import utilities, dataclass
+from . import dataclass, utilities
 
 log: logging.Logger = utilities.getLog("Bot", level=logging.DEBUG)
 intents = discord.Intents.all()
@@ -63,6 +63,13 @@ async def startupTasks():
     log.debug("Running startup tasks...")
     bot.appInfo = await bot.application_info()
     bot.startTime = datetime.now()
+
+    log.info("Caching permission data")
+    slash.perms_cache = {}
+    for guild in bot.guilds:
+        guild_data = await bot.get_guild_data(guild.id)
+        if guild_data:
+            slash.perms_cache[guild.id] = guild_data.moderation_roles
 
     async with asyncio.Lock():
         log.info("Running cog setup tasks")

@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime
 
+import discord
 from discord_slash import cog_ext
 from PIL import Image
 
@@ -92,6 +93,8 @@ class ModLog(commands.Cog):
                 emb.description = f"{self.emoji['link']}[**Jump To Location**]({msg.jump_url})"
                 break
 
+        emb.add_field(name=kwargs["after"].author.name, value=f"#{kwargs['after'].author.discriminator}", inline=False)
+
         if before.clean_content:
             emb.add_field(name="Content", value=before.clean_content, inline=False)
 
@@ -112,6 +115,8 @@ class ModLog(commands.Cog):
 
         emb.title = f"{self.emoji['edit']} Message Edited"
         emb.description = f"{self.emoji['link']}[**Jump To Message**]({kwargs['after'].jump_url})"
+        emb.add_field(name=kwargs["after"].author.name, value=f"#{kwargs['after'].author.discriminator}", inline=False)
+
         emb.add_field(
             name=f"Original",
             value=f"{kwargs['before'].clean_content}",

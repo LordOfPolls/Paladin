@@ -93,7 +93,7 @@ class ModLog(commands.Cog):
                 emb.description = f"{self.emoji['link']}[**Jump To Location**]({msg.jump_url})"
                 break
 
-        emb.add_field(name=kwargs["after"].author.name, value=f"#{kwargs['after'].author.discriminator}", inline=False)
+        emb.add_field(name=before.author.name, value=f"{before.author.discriminator}", inline=False)
 
         if before.clean_content:
             emb.add_field(name="Content", value=before.clean_content, inline=False)

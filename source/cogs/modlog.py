@@ -93,7 +93,7 @@ class ModLog(commands.Cog):
                 emb.description = f"{self.emoji['link']}[**Jump To Location**]({msg.jump_url})"
                 break
 
-        emb.add_field(name=before.author.name, value=f"{before.author.discriminator}", inline=False)
+        emb.set_author(name=f"{before.author.name} #{before.author.discriminator}", icon_url=before.author.avatar_url)
 
         if before.clean_content:
             emb.add_field(name="Content", value=before.clean_content, inline=False)
@@ -115,7 +115,10 @@ class ModLog(commands.Cog):
 
         emb.title = f"{self.emoji['edit']} Message Edited"
         emb.description = f"{self.emoji['link']}[**Jump To Message**]({kwargs['after'].jump_url})"
-        emb.add_field(name=kwargs["after"].author.name, value=f"#{kwargs['after'].author.discriminator}", inline=False)
+        emb.set_author(
+            name=f"{kwargs['after'].author.name} #{kwargs['after'].author.discriminator}",
+            icon_url=kwargs["after"].author.avatar_url,
+        )
 
         emb.add_field(
             name=f"Original",
@@ -149,7 +152,7 @@ class ModLog(commands.Cog):
             return None
 
         emb.set_thumbnail(url=after.avatar_url)
-        emb.add_field(name=after.display_name, value=f"#{after.discriminator}", inline=False)
+        emb.set_author(name=f"{after.author.name} #{after.author.discriminator}", icon_url=after.author.avatar_url)
 
         if before.nick != after.nick:
             # nickname has changed
@@ -192,7 +195,7 @@ class ModLog(commands.Cog):
         emb.title = f"{self.emoji['MemberRemove']} User Left"
         emb.colour = discord.Colour.red()
         emb.set_thumbnail(url=member.avatar_url)
-        emb.add_field(name=member.display_name, value=f"#{member.discriminator}", inline=False)
+        emb.set_author(name=f"{member.name} #{member.discriminator}", icon_url=member.avatar_url)
 
         emb.add_field(name="ID", value=member.id, inline=False)
         emb.add_field(
@@ -211,7 +214,7 @@ class ModLog(commands.Cog):
         emb.title = f"{self.emoji['MemberAdd']} User Joined"
         emb.colour = discord.Colour.green()
         emb.set_thumbnail(url=member.avatar_url)
-        emb.add_field(name=member.display_name, value=f"#{member.discriminator}", inline=False)
+        emb.set_author(name=f"{member.name} #{member.discriminator}", icon_url=member.avatar_url)
 
         emb.add_field(name="ID", value=member.id, inline=False)
         emb.add_field(
@@ -234,7 +237,7 @@ class ModLog(commands.Cog):
         emb.title = f"{self.emoji['banned']} User Banned"
         emb.colour = discord.Colour.dark_red()
         emb.set_thumbnail(url=member.avatar_url)
-        emb.add_field(name=member.display_name, value=f"#{member.discriminator}")
+        emb.set_author(name=f"{member.name} #{member.discriminator}", icon_url=member.avatar_url)
 
         emb.add_field(
             name="Join Date:",

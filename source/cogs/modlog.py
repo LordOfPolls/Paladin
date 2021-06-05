@@ -238,17 +238,19 @@ class ModLog(commands.Cog):
         emb.colour = discord.Colour.dark_red()
         emb.set_thumbnail(url=member.avatar_url)
         emb.set_author(name=f"{member.name} #{member.discriminator}", icon_url=member.avatar_url)
-
-        emb.add_field(
-            name="Join Date:",
-            value=self.bot.formatDate(member.joined_at),
-            inline=False,
-        )
-        emb.add_field(
-            name="Banned After:",
-            value=self.bot.strf_delta(datetime.utcnow() - member.joined_at),
-            inline=False,
-        )
+        try:
+            emb.add_field(
+                name="Join Date:",
+                value=self.bot.formatDate(member.joined_at),
+                inline=False,
+            )
+            emb.add_field(
+                name="Banned After:",
+                value=self.bot.strf_delta(datetime.utcnow() - member.joined_at),
+                inline=False,
+            )
+        except AttributeError:
+            pass
 
     async def fmt_unban(self, emb: discord.Embed, member: discord.Member):
         # todo: complete unban event - unsure what data to show in embed
